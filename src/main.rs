@@ -40,14 +40,18 @@ fn main() -> Result<(), GraphError> {
     #[cfg(feature = "gpu")]
     let is_gpu = true;
 
+    // Hyper Parameters
     let batch_size = 32;
-    let num_tokens = 64;
-    let embedding_degree = 64;
+
+    // It seems femtoGPT reads the first N bytes of the sample dataset...
+    let num_tokens = 512;
+
+    let embedding_dimension = 64;
     let num_layers = 4;
     let num_heads = 4;
-    let head_size = embedding_degree / num_heads;
+    let head_size = embedding_dimension / num_heads;
     let dropout = 0.0;
-    assert_eq!(num_heads * head_size, embedding_degree);
+    assert_eq!(num_heads * head_size, embedding_dimension);
 
     let cli = Cli::from_args();
     match cli {
@@ -67,7 +71,7 @@ fn main() -> Result<(), GraphError> {
                 .expect("Should have been able to read the file");
             let tokenizer = SimpleTokenizer::new(&dataset_char);
 
-            assert_eq!(num_heads * head_size, embedding_degree);
+            assert_eq!(num_heads * head_size, embedding_dimension);
 
             let vocab_size = tokenizer.vocab_size();
             println!("Vocab-size: {} unique characters", vocab_size);
@@ -76,7 +80,7 @@ fn main() -> Result<(), GraphError> {
                 graph,
                 is_gpu.then(|| batch_size), // Pre-allocate batches only when using GPUs
                 vocab_size,
-                embedding_degree,
+                embedding_dimension,
                 num_tokens,
                 num_layers,
                 num_heads,
@@ -126,7 +130,7 @@ fn main() -> Result<(), GraphError> {
                 graph,
                 is_gpu.then(|| batch_size), // Pre-allocate batches only when using GPUs
                 vocab_size,
-                embedding_degree,
+                embedding_dimension,
                 num_tokens,
                 num_layers,
                 num_heads,
@@ -177,23 +181,6 @@ fn main() -> Result<(), GraphError> {
             };
 
             let callback = |gpt: &mut GPT<_>| {
-                let mut rng = rand::thread_rng();
-                let inference_temperature = 0.5; // How creative? 0.0 min 1.0 max
-
-                println!("Generating text:");
-
-                let inference = gpt.infer(
-                    &mut rng,
-                    &tokenizer.tokenize("\n"),
-                    100,
-                    inference_temperature,
-                    |_ch| {},
-                )?;
-
-                // Generate 100 character with the currently trained model before
-                // starting the training loop.
-                println!("{}", tokenizer.untokenize(&inference));
-
                 println!("Saving the model...");
                 gpt.sync().unwrap();
                 let ts = gpt.get_training_state().unwrap();
