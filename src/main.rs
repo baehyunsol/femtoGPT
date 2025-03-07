@@ -53,8 +53,8 @@ fn main() -> Result<(), GraphError> {
     let is_gpu = true;
 
     // Hyper Parameters
+    // NOTE: Feed-Forward dimension is always `embedding_dimension * 4`.
     let batch_size = 32;
-
     let embedding_dimension = 64;
     let num_layers = 4;
     let num_heads = 4;
