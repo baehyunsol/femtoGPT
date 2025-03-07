@@ -2,6 +2,7 @@ use femto_gpt::gpt::{TrainingState, GPT};
 use femto_gpt::graph::GraphError;
 use femto_gpt::optimizer::AdamW;
 use femto_gpt::tokenizer::{SimpleTokenizer, Tokenizer};
+use rand::seq::SliceRandom;
 use std::fs;
 use std::io::prelude::*;
 use std::path::PathBuf;
@@ -26,8 +27,6 @@ enum Cli {
         context_size: usize,
     },
     Infer {
-        #[structopt(long, default_value = "dataset.txt")]
-        tokenizer_dataset: PathBuf,
         #[structopt(long, default_value = "training_state.dat")]
         model: PathBuf,
         #[structopt(long)]
@@ -65,7 +64,6 @@ fn main() -> Result<(), GraphError> {
     let cli = Cli::from_args();
     match cli {
         Cli::Infer {
-            tokenizer_dataset,
             model,
             prompt,
             count,
@@ -73,13 +71,8 @@ fn main() -> Result<(), GraphError> {
             context_size,
         } => {
             let training_state_path = &model.clone();
-
             let mut rng = rand::thread_rng();
-
-            // Create a unique char-to-int mapping for all unique characters inside our dataset
-            let dataset_char = fs::read_to_string(tokenizer_dataset)
-                .expect("Should have been able to read the file");
-            let tokenizer = SimpleTokenizer::new(&dataset_char);
+            let tokenizer = SimpleTokenizer::new("");
 
             assert_eq!(num_heads * head_size, embedding_dimension);
 
@@ -195,11 +188,12 @@ fn main() -> Result<(), GraphError> {
                 Ok(())
             };
 
-            let dataset_files = if ragit_fs::is_dir(&dataset) {
-                ragit_fs::read_dir(&dataset, true).unwrap()
+            let mut dataset_files = if ragit_fs::is_dir(&dataset) {
+                ragit_fs::read_dir(&dataset, false).unwrap()
             } else {
                 vec![dataset]
             };
+            dataset_files.shuffle(&mut rand::thread_rng());
             let mut file_index = 0;
 
             loop {
