@@ -1,3 +1,6 @@
 /target
 /training_state.dat
 Cargo.lock
+
+# log file
+*.db

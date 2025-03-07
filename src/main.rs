@@ -7,6 +7,12 @@ use std::io::prelude::*;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+use femto_gpt::log::{
+    initialize_log,
+    write_log_dataset_file,
+    write_log_save,
+};
+
 // femtoGPT reads the first `context_size` tokens of the sample data when training. It's a hard-coded context-size.
 // But it seems like we can change `context_size` without re-training the model.
 #[derive(StructOpt, Debug)]
@@ -116,6 +122,7 @@ fn main() -> Result<(), GraphError> {
             Ok(())
         }
         Cli::Train { dataset, model, context_size } => {
+            initialize_log();
             let training_state_path = &model.clone();
             let tokenizer = SimpleTokenizer::new("");
             let mut rng = rand::thread_rng();
@@ -183,6 +190,7 @@ fn main() -> Result<(), GraphError> {
                 let ts = gpt.get_training_state().unwrap();
                 let bytes = bincode::serialize(&ts).unwrap();
                 fs::write(training_state_path, &bytes).expect("Unable to write file");
+                write_log_save();
 
                 Ok(())
             };
@@ -196,6 +204,7 @@ fn main() -> Result<(), GraphError> {
 
             loop {
                 let dataset_file = dataset_files[file_index % dataset_files.len()].clone();
+                write_log_dataset_file(&dataset_file, context_size);
                 file_index += 1;
                 println!("Reading {dataset_file}...");
                 let dataset_char = ragit_fs::read_string(&dataset_file).expect("Should have been able to read the file");
@@ -206,7 +215,7 @@ fn main() -> Result<(), GraphError> {
                 #[cfg(not(feature = "gpu"))]
                 gpt.train_cpu(
                     &dataset,
-                    20,
+                    40,
                     batch_size,
                     None, // or Some(n), limit backward process to last n computations
                     &AdamW::new(),
@@ -217,7 +226,7 @@ fn main() -> Result<(), GraphError> {
                 #[cfg(feature = "gpu")]
                 gpt.train(
                     &dataset,
-                    20,
+                    40,
                     batch_size,
                     None, // or Some(n), limit backward process to last n computations
                     &AdamW::new(),

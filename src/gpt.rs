@@ -1,5 +1,6 @@
 use crate::funcs::*;
 use crate::graph::{Graph, GraphError, TensorId};
+use crate::log::write_log_step;
 use crate::optimizer::{Optimizer, OptimizerState};
 use crate::tensor::{GeneralTensor, Tensor, TensorError, TensorOps};
 use rand::Rng;
@@ -438,7 +439,12 @@ impl<G: Graph> GPT<G> {
                 "Step: {} Loss: {} (Elapsed: {}ms)",
                 self.graph.optimizer_step(),
                 avg_loss,
-                timer.elapsed().as_millis()
+                timer.elapsed().as_millis(),
+            );
+            write_log_step(
+                self.graph.optimizer_step(),
+                avg_loss,
+                timer.elapsed().as_millis(),
             );
         }
         Ok(())
