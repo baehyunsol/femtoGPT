@@ -7,13 +7,17 @@ use std::io::prelude::*;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+// femtoGPT reads the first `context_size` tokens of the sample data when training. It's a hard-coded context-size.
+// But it seems like we can change `context_size` without re-training the model.
 #[derive(StructOpt, Debug)]
 enum Cli {
     Train {
         #[structopt(long, default_value = "dataset.txt")]
-        dataset: PathBuf,
+        dataset: String,
         #[structopt(long, default_value = "training_state.dat")]
         model: PathBuf,
+        #[structopt(long, default_value = "64")]
+        context_size: usize,
     },
     Infer {
         #[structopt(long, default_value = "dataset.txt")]
@@ -26,6 +30,8 @@ enum Cli {
         count: usize,
         #[structopt(long, default_value = "0.5")]
         temperature: f32,
+        #[structopt(long, default_value = "64")]
+        context_size: usize,
     },
 }
 
@@ -43,9 +49,6 @@ fn main() -> Result<(), GraphError> {
     // Hyper Parameters
     let batch_size = 32;
 
-    // It seems femtoGPT reads the first N bytes of the sample dataset...
-    let num_tokens = 512;
-
     let embedding_dimension = 64;
     let num_layers = 4;
     let num_heads = 4;
@@ -61,6 +64,7 @@ fn main() -> Result<(), GraphError> {
             prompt,
             count,
             temperature,
+            context_size,
         } => {
             let training_state_path = &model.clone();
 
@@ -81,7 +85,7 @@ fn main() -> Result<(), GraphError> {
                 is_gpu.then(|| batch_size), // Pre-allocate batches only when using GPUs
                 vocab_size,
                 embedding_dimension,
-                num_tokens,
+                context_size,
                 num_layers,
                 num_heads,
                 head_size,
@@ -111,19 +115,12 @@ fn main() -> Result<(), GraphError> {
 
             Ok(())
         }
-        Cli::Train { dataset, model } => {
+        Cli::Train { dataset, model, context_size } => {
             let training_state_path = &model.clone();
-
+            let tokenizer = SimpleTokenizer::new("");
             let mut rng = rand::thread_rng();
-
-            // Create a unique char-to-int mapping for all unique characters inside our dataset
-            let dataset_char =
-                fs::read_to_string(dataset).expect("Should have been able to read the file");
-            let tokenizer = SimpleTokenizer::new(&dataset_char);
-
-            let dataset = tokenizer.tokenize(&dataset_char);
-
             let vocab_size = tokenizer.vocab_size();
+
             println!("Vocab-size: {} unique characters", vocab_size);
             let mut gpt = GPT::new(
                 &mut rng,
@@ -131,7 +128,7 @@ fn main() -> Result<(), GraphError> {
                 is_gpu.then(|| batch_size), // Pre-allocate batches only when using GPUs
                 vocab_size,
                 embedding_dimension,
-                num_tokens,
+                context_size,
                 num_layers,
                 num_heads,
                 head_size,
@@ -190,28 +187,44 @@ fn main() -> Result<(), GraphError> {
                 Ok(())
             };
 
-            // Training loop!
-            #[cfg(not(feature = "gpu"))]
-            gpt.train_cpu(
-                &dataset,
-                100000,
-                batch_size,
-                None, // or Some(n), limit backward process to last n computations
-                &AdamW::new(),
-                learning_rate,
-                callback,
-            )?;
+            let dataset_files = if ragit_fs::is_dir(&dataset) {
+                ragit_fs::read_dir(&dataset, true).unwrap()
+            } else {
+                vec![dataset]
+            };
+            let mut file_index = 0;
 
-            #[cfg(feature = "gpu")]
-            gpt.train(
-                &dataset,
-                100000,
-                batch_size,
-                None, // or Some(n), limit backward process to last n computations
-                &AdamW::new(),
-                learning_rate,
-                callback,
-            )?;
+            loop {
+                let dataset_file = dataset_files[file_index % dataset_files.len()].clone();
+                file_index += 1;
+                println!("Reading {dataset_file}...");
+                let dataset_char = ragit_fs::read_string(&dataset_file).expect("Should have been able to read the file");
+                let tokenizer = SimpleTokenizer::new(&dataset_char);
+                let dataset = tokenizer.tokenize(&dataset_char);
+
+                // Training loop!
+                #[cfg(not(feature = "gpu"))]
+                gpt.train_cpu(
+                    &dataset,
+                    20,
+                    batch_size,
+                    None, // or Some(n), limit backward process to last n computations
+                    &AdamW::new(),
+                    learning_rate,
+                    callback,
+                )?;
+
+                #[cfg(feature = "gpu")]
+                gpt.train(
+                    &dataset,
+                    20,
+                    batch_size,
+                    None, // or Some(n), limit backward process to last n computations
+                    &AdamW::new(),
+                    learning_rate,
+                    callback,
+                )?;
+            }
 
             Ok(())
         }
