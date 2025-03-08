@@ -3,9 +3,6 @@ use femto_gpt::graph::GraphError;
 use femto_gpt::optimizer::AdamW;
 use femto_gpt::tokenizer::{SimpleTokenizer, Tokenizer};
 use rand::seq::SliceRandom;
-use std::fs;
-use std::io::prelude::*;
-use std::path::PathBuf;
 use structopt::StructOpt;
 
 use femto_gpt::log::{
@@ -19,18 +16,14 @@ use femto_gpt::log::{
 #[derive(StructOpt, Debug)]
 enum Cli {
     Train {
-        #[structopt(long, default_value = "dataset.txt")]
-        dataset: String,
-        #[structopt(long, default_value = "training_state.dat")]
-        model: PathBuf,
+        #[structopt(long)]
+        repo: String,
         #[structopt(long, default_value = "256")]
         context_size: usize,
-        #[structopt(long, default_value = "hyper_params.json")]
-        hyper_params: String,
     },
     Infer {
-        #[structopt(long, default_value = "training_state.dat")]
-        model: PathBuf,
+        #[structopt(long)]
+        repo: String,
         #[structopt(long)]
         prompt: String,
         #[structopt(long, default_value = "100")]
@@ -39,8 +32,6 @@ enum Cli {
         temperature: f32,
         #[structopt(long, default_value = "256")]
         context_size: usize,
-        #[structopt(long, default_value = "hyper_params.json")]
-        hyper_params: String,
     },
 }
 
@@ -61,16 +52,14 @@ fn main() -> Result<(), GraphError> {
 
     match cli {
         Cli::Infer {
-            model,
+            repo,
             prompt,
             count,
             temperature,
             context_size,
-            hyper_params,
         } => {
             // NOTE: Feed-Forward dimension is always `embedding_dimension * 4`.
-            let (embedding_dimension, num_layers, num_heads, head_size) = load_hyper_params(hyper_params);
-            let training_state_path = &model.clone();
+            let (embedding_dimension, num_layers, num_heads, head_size) = load_hyper_params(&repo);
             let mut rng = rand::thread_rng();
             let tokenizer = SimpleTokenizer::new("");
 
@@ -93,10 +82,7 @@ fn main() -> Result<(), GraphError> {
 
             gpt.sync()?;
 
-            let mut ts_file = fs::File::open(&training_state_path).unwrap();
-            let mut bytes = Vec::new();
-            ts_file.read_to_end(&mut bytes).unwrap();
-            let ts: TrainingState = bincode::deserialize(&bytes).unwrap();
+            let ts: TrainingState = get_checkpoint(&repo, None).unwrap();
             gpt.set_training_state(ts, true)?;
 
             println!("Generating text:");
@@ -114,11 +100,10 @@ fn main() -> Result<(), GraphError> {
 
             Ok(())
         },
-        Cli::Train { dataset, model, context_size, hyper_params } => {
+        Cli::Train { repo, context_size } => {
             // NOTE: Feed-Forward dimension is always `embedding_dimension * 4`.
-            let (embedding_dimension, num_layers, num_heads, head_size) = load_hyper_params(hyper_params);
+            let (embedding_dimension, num_layers, num_heads, head_size) = load_hyper_params(&repo);
             initialize_log();
-            let training_state_path = &model.clone();
             let tokenizer = SimpleTokenizer::new("");
             let mut rng = rand::thread_rng();
             let vocab_size = tokenizer.vocab_size();
@@ -141,16 +126,7 @@ fn main() -> Result<(), GraphError> {
 
             println!("Number of parameters: {}", gpt.num_params());
 
-            // Load training data from train_data directory (If exists)
-            // If you want to reuse training_data of a smaller model in a bigger model, you may
-            // first start again with a new optimizer by setting load_optimizer=false
-            // WARN: YOU CAN ONLY REUSE THE WEIGHTS OF A MODEL WITH DIFFERENT NUM-LAYERS!
-            // IT'S NOT POSSIBLE TO CHANGE OTHER PROPERTIES ONCE THE MODEL IS TRAINED!
-            if training_state_path.is_file() {
-                let mut ts_file = fs::File::open(&training_state_path).unwrap();
-                let mut bytes = Vec::new();
-                ts_file.read_to_end(&mut bytes).unwrap();
-                let ts: TrainingState = bincode::deserialize(&bytes).unwrap();
+            if let Some(ts) = get_checkpoint(&repo, None) {
                 gpt.set_training_state(ts, true)?;
             }
 
@@ -179,22 +155,18 @@ fn main() -> Result<(), GraphError> {
                 }
             };
 
-            let callback = |gpt: &mut GPT<_>| {
+            let callback = |gpt: &mut GPT<_>, step: usize, loss: f32| {
                 println!("Saving the model...");
                 gpt.sync().unwrap();
                 let ts = gpt.get_training_state().unwrap();
-                let bytes = bincode::serialize(&ts).unwrap();
-                fs::write(training_state_path, &bytes).expect("Unable to write file");
+                save_checkpoint(&repo, step, loss, &ts);
                 write_log_save();
 
                 Ok(())
             };
 
-            let mut dataset_files = if ragit_fs::is_dir(&dataset) {
-                ragit_fs::read_dir(&dataset, false).unwrap()
-            } else {
-                vec![dataset]
-            };
+            let dataset = ragit_fs::join(&repo, "data").unwrap();
+            let mut dataset_files = ragit_fs::read_dir(&dataset, false).unwrap();
             dataset_files.shuffle(&mut rand::thread_rng());
             let mut file_index = 0;
 
@@ -236,6 +208,8 @@ fn main() -> Result<(), GraphError> {
     }
 }
 
+use lazy_static::lazy_static;
+use regex::Regex;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -245,7 +219,8 @@ struct HyperParameter {
     num_heads: usize,
 }
 
-fn load_hyper_params(path: String) -> (usize, usize, usize, usize) {
+fn load_hyper_params(repo: &str) -> (usize, usize, usize, usize) {
+    let path = ragit_fs::join(repo, "hyper_params.json").unwrap();
     let j = ragit_fs::read_string(&path).unwrap();
     let hyper_params = serde_json::from_str::<HyperParameter>(&j).unwrap();
     let head_size = hyper_params.embedding_dimension / hyper_params.num_heads;
@@ -257,4 +232,65 @@ fn load_hyper_params(path: String) -> (usize, usize, usize, usize) {
         hyper_params.num_heads,
         head_size,
     )
+}
+
+fn get_checkpoint(repo: &str, index: Option<usize>) -> Option<TrainingState> {
+    let checkpoints_at = ragit_fs::join(repo, "checkpoint").unwrap();
+
+    match ragit_fs::read_dir(&checkpoints_at, true) {
+        Ok(cp) if !cp.is_empty() => {
+            let checkpoint = &cp[cp.len() - index.unwrap_or(0) - 1];
+            let cpre = CHECKPOINT_RE.captures(&checkpoint).unwrap();
+            println!("reading checkpoint... step: {}, loss: {}", &cpre[1], &cpre[2]);
+            let bytes = ragit_fs::read_bytes(&checkpoint).unwrap();
+            Some(bincode::deserialize(&bytes).unwrap())
+        },
+        _ => None,
+    }
+}
+
+lazy_static! {
+    static ref CHECKPOINT_RE: Regex = Regex::new(r".*cp-(\d{6})-(\d*\.?\d*).*").unwrap();
+}
+
+fn save_checkpoint(repo: &str, step: usize, loss: f32, ts: &TrainingState) {
+    let checkpoints_at = ragit_fs::join(repo, "checkpoint").unwrap();
+
+    if !ragit_fs::exists(&checkpoints_at) {
+        ragit_fs::create_dir(&checkpoints_at).unwrap();
+    }
+
+    let mut checkpoints = ragit_fs::read_dir(&checkpoints_at, true).unwrap();
+    checkpoints = checkpoints.into_iter().filter(|cp| CHECKPOINT_RE.is_match(&cp)).collect();
+
+    let d_step = if checkpoints.len() < 12 {
+        0
+    } else if checkpoints.len() < 24 {
+        let cp1 = CHECKPOINT_RE.captures(&checkpoints[0]).unwrap()[1].parse::<usize>().unwrap();
+        let cp2 = CHECKPOINT_RE.captures(&checkpoints[1]).unwrap()[1].parse::<usize>().unwrap();
+
+        cp2 - cp1
+    } else {
+        for (i, checkpoint) in checkpoints.iter().enumerate() {
+            if i % 2 == 0 {
+                ragit_fs::remove_file(&checkpoint).unwrap();
+            }
+        }
+
+        return;
+    };
+
+    let last_step = if let Some(last_checkpoint) = checkpoints.last() {
+        CHECKPOINT_RE.captures(last_checkpoint).unwrap()[1].parse::<usize>().unwrap()
+    } else {
+        0
+    };
+
+    if step - last_step >= d_step {
+        ragit_fs::write_bytes(
+            &ragit_fs::join3(repo, "checkpoint", &format!("cp-{step:06}-{loss:.04}")).unwrap(),
+            &bincode::serialize(&ts).unwrap(),
+            ragit_fs::WriteMode::AlwaysCreate,
+        ).unwrap();
+    }
 }

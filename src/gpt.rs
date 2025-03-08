@@ -376,7 +376,7 @@ impl<G: Graph> GPT<G> {
     pub fn train_cpu<
         O: Optimizer,
         F: Fn(usize) -> f32,
-        C: Fn(&mut Self) -> Result<(), GraphError>,
+        C: Fn(&mut Self, usize, f32) -> Result<(), GraphError>,
     >(
         &mut self,
         dataset: &[usize],
@@ -431,10 +431,8 @@ impl<G: Graph> GPT<G> {
             let avg_loss = errs.iter().sum::<f32>() / errs.len() as f32;
             let lr = learning_rate(self.graph.optimizer_step());
             self.graph.optimize(optimizer, lr)?;
-            if i % 10 == 0 {
-                self.sync()?;
-                callback(self)?;
-            }
+            self.sync()?;
+            callback(self, self.graph.optimizer_step(), avg_loss)?;
             println!(
                 "Step: {} Loss: {} (Elapsed: {}ms)",
                 self.graph.optimizer_step(),
