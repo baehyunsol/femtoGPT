@@ -5,7 +5,6 @@ mod ops;
 mod view;
 pub use elements::*;
 pub use error::*;
-pub use helper::*;
 pub use ops::*;
 pub use view::*;
 
