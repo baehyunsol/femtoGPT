@@ -1,0 +1,5 @@
+{
+    "embedding_dimension": 256,
+    "num_layers": 8,
+    "num_heads": 8
+}

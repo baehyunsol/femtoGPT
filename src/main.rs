@@ -23,8 +23,10 @@ enum Cli {
         dataset: String,
         #[structopt(long, default_value = "training_state.dat")]
         model: PathBuf,
-        #[structopt(long, default_value = "64")]
+        #[structopt(long, default_value = "256")]
         context_size: usize,
+        #[structopt(long, default_value = "hyper_params.json")]
+        hyper_params: String,
     },
     Infer {
         #[structopt(long, default_value = "training_state.dat")]
@@ -35,8 +37,10 @@ enum Cli {
         count: usize,
         #[structopt(long, default_value = "0.5")]
         temperature: f32,
-        #[structopt(long, default_value = "64")]
+        #[structopt(long, default_value = "256")]
         context_size: usize,
+        #[structopt(long, default_value = "hyper_params.json")]
+        hyper_params: String,
     },
 }
 
@@ -51,17 +55,10 @@ fn main() -> Result<(), GraphError> {
     #[cfg(feature = "gpu")]
     let is_gpu = true;
 
-    // Hyper Parameters
-    // NOTE: Feed-Forward dimension is always `embedding_dimension * 4`.
     let batch_size = 32;
-    let embedding_dimension = 64;
-    let num_layers = 4;
-    let num_heads = 4;
-    let head_size = embedding_dimension / num_heads;
     let dropout = 0.0;
-    assert_eq!(num_heads * head_size, embedding_dimension);
-
     let cli = Cli::from_args();
+
     match cli {
         Cli::Infer {
             model,
@@ -69,7 +66,10 @@ fn main() -> Result<(), GraphError> {
             count,
             temperature,
             context_size,
+            hyper_params,
         } => {
+            // NOTE: Feed-Forward dimension is always `embedding_dimension * 4`.
+            let (embedding_dimension, num_layers, num_heads, head_size) = load_hyper_params(hyper_params);
             let training_state_path = &model.clone();
             let mut rng = rand::thread_rng();
             let tokenizer = SimpleTokenizer::new("");
@@ -113,8 +113,10 @@ fn main() -> Result<(), GraphError> {
             println!("{}", tokenizer.untokenize(&inference));
 
             Ok(())
-        }
-        Cli::Train { dataset, model, context_size } => {
+        },
+        Cli::Train { dataset, model, context_size, hyper_params } => {
+            // NOTE: Feed-Forward dimension is always `embedding_dimension * 4`.
+            let (embedding_dimension, num_layers, num_heads, head_size) = load_hyper_params(hyper_params);
             initialize_log();
             let training_state_path = &model.clone();
             let tokenizer = SimpleTokenizer::new("");
@@ -232,4 +234,27 @@ fn main() -> Result<(), GraphError> {
             Ok(())
         }
     }
+}
+
+use serde::Deserialize;
+
+#[derive(Deserialize)]
+struct HyperParameter {
+    embedding_dimension: usize,
+    num_layers: usize,
+    num_heads: usize,
+}
+
+fn load_hyper_params(path: String) -> (usize, usize, usize, usize) {
+    let j = ragit_fs::read_string(&path).unwrap();
+    let hyper_params = serde_json::from_str::<HyperParameter>(&j).unwrap();
+    let head_size = hyper_params.embedding_dimension / hyper_params.num_heads;
+    assert_eq!(hyper_params.num_heads * head_size, hyper_params.embedding_dimension);
+
+    (
+        hyper_params.embedding_dimension,
+        hyper_params.num_layers,
+        hyper_params.num_heads,
+        head_size,
+    )
 }
