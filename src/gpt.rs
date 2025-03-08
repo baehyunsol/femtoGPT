@@ -392,7 +392,7 @@ impl<G: Graph> GPT<G> {
     {
         self.graph.load(self.pos_input, &self.pos_input_fixed)?;
 
-        for i in 0..num_batches {
+        for _ in 0..num_batches {
             let timer = Instant::now();
             let (graphs, errs): (Vec<G>, Vec<f32>) = (0..batch_size)
                 .into_par_iter()

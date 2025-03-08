@@ -156,7 +156,6 @@ fn main() -> Result<(), GraphError> {
             };
 
             let callback = |gpt: &mut GPT<_>, step: usize, loss: f32| {
-                println!("Saving the model...");
                 gpt.sync().unwrap();
                 let ts = gpt.get_training_state().unwrap();
                 save_checkpoint(&repo, step, loss, &ts);
@@ -202,8 +201,6 @@ fn main() -> Result<(), GraphError> {
                     callback,
                 )?;
             }
-
-            Ok(())
         }
     }
 }
@@ -287,8 +284,10 @@ fn save_checkpoint(repo: &str, step: usize, loss: f32, ts: &TrainingState) {
     };
 
     if step - last_step >= d_step {
+        let file_name = ragit_fs::join3(repo, "checkpoint", &format!("cp-{step:06}-{loss:.04}")).unwrap();
+        println!("Saving {file_name}...");
         ragit_fs::write_bytes(
-            &ragit_fs::join3(repo, "checkpoint", &format!("cp-{step:06}-{loss:.04}")).unwrap(),
+            &file_name,
             &bincode::serialize(&ts).unwrap(),
             ragit_fs::WriteMode::AlwaysCreate,
         ).unwrap();
