@@ -11,7 +11,8 @@ use femto_gpt::log::{
     write_log_save,
 };
 
-// femtoGPT reads the first `context_size` tokens of the sample data when training. It's a hard-coded context-size.
+// I just figured out what `context_size` does when training. It splits the sample data into chunks where each chunk is `context_size` tokens long. Then it
+// predicts the token that comes after the chunk.
 // But it seems like we can change `context_size` without re-training the model.
 #[derive(StructOpt, Debug)]
 enum Cli {
