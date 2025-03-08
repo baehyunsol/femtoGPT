@@ -25,6 +25,8 @@ enum Cli {
         #[structopt(long)]
         repo: String,
         #[structopt(long)]
+        old_checkpoint: Option<usize>,
+        #[structopt(long)]
         prompt: String,
         #[structopt(long, default_value = "100")]
         count: usize,
@@ -53,6 +55,7 @@ fn main() -> Result<(), GraphError> {
     match cli {
         Cli::Infer {
             repo,
+            old_checkpoint,
             prompt,
             count,
             temperature,
@@ -82,7 +85,7 @@ fn main() -> Result<(), GraphError> {
 
             gpt.sync()?;
 
-            let ts: TrainingState = get_checkpoint(&repo, None).unwrap();
+            let ts: TrainingState = get_checkpoint(&repo, old_checkpoint).unwrap();
             gpt.set_training_state(ts, true)?;
 
             println!("Generating text:");
