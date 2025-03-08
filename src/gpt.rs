@@ -35,7 +35,7 @@ fn sample_dataset<R: Rng>(
     let mut xs: Vec<usize> = Vec::with_capacity(batch_size * context_size);
     let mut ys: Vec<usize> = Vec::with_capacity(batch_size * context_size);
     for _i in 0..batch_size {
-        let start: usize = rng.gen_range(0..(dataset.len().max(context_size) - context_size));
+        let start: usize = rng.gen_range(0..(dataset.len().max(context_size) - context_size + 1));
         let all = dataset
             .iter()
             .cycle()
