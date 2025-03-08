@@ -434,7 +434,7 @@ impl<G: Graph> GPT<G> {
             self.sync()?;
             callback(self, self.graph.optimizer_step(), avg_loss)?;
             println!(
-                "Step: {} Loss: {} (Elapsed: {}ms)",
+                "Step: {} Loss: {:.04} (Elapsed: {}ms)",
                 self.graph.optimizer_step(),
                 avg_loss,
                 timer.elapsed().as_millis(),
