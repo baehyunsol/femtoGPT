@@ -57,6 +57,7 @@ fn select<R: Rng, T: TensorOps<f32>>(
     rng: &mut R,
     t: &T,
     temperature: f32,
+    show_options: bool,
 ) -> Result<usize, TensorError> {
     let t = Softmax::new().run(
         &[&GeneralTensor::Float(Tensor::<f32>::raw(
@@ -67,6 +68,14 @@ fn select<R: Rng, T: TensorOps<f32>>(
     )?;
     let mut ts = t.blob().iter().cloned().enumerate().collect::<Vec<_>>();
     ts.sort_by_key(|(_, b)| (b * 1000.) as usize);
+
+    // assumes ByteTokenizer
+    if show_options {
+        for (id, t) in ts.iter().rev().take(5) {
+            println!("token: {}, prob: {:.03}%", *id as u8 as char, t * 100.0);
+        }
+    }
+
     let dice = rng.gen_range(0.0..temperature);
     let mut accum = 0.;
     for (id, t) in ts.iter().rev() {
@@ -493,6 +502,7 @@ impl<G: Graph> GPT<G> {
         count: usize,
         temperature: f32,
         callback: F,
+        show_options: bool,
     ) -> Result<Vec<usize>, GraphError> {
         let mut cnt = prompt.len();
         let mut context = vec![0; self.num_tokens];
@@ -521,6 +531,7 @@ impl<G: Graph> GPT<G> {
                     .get(0)?
                     .get(cnt - 1)?,
                 temperature,
+                show_options,
             )?;
 
             chs.push(next_ch);

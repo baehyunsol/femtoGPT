@@ -97,6 +97,7 @@ fn main() -> Result<(), GraphError> {
                 count,
                 temperature,
                 |_ch| {},
+                true,  // show_options
             )?;
 
             // Generate 100 character with the currently trained model
