@@ -11,7 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use super::Tokenizer;
+use super::TokenizerImpl;
 
 use rayon::prelude::*;
 use std::collections::HashMap;
@@ -173,7 +173,7 @@ impl SentencePieceTokenizer {
     }
 }
 
-impl Tokenizer for SentencePieceTokenizer {
+impl TokenizerImpl for SentencePieceTokenizer {
     fn vocab_size(&self) -> usize {
         self.vocab.len()
     }

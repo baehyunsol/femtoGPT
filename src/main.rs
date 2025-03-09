@@ -1,7 +1,7 @@
 use femto_gpt::gpt::{TrainingState, GPT};
 use femto_gpt::graph::GraphError;
 use femto_gpt::optimizer::AdamW;
-use femto_gpt::tokenizer::{SimpleTokenizer, Tokenizer};
+use femto_gpt::tokenizer::{Tokenizer, TokenizerImpl};
 use rand::seq::SliceRandom;
 use structopt::StructOpt;
 
@@ -65,7 +65,7 @@ fn main() -> Result<(), GraphError> {
             // NOTE: Feed-Forward dimension is always `embedding_dimension * 4`.
             let (embedding_dimension, num_layers, num_heads, head_size) = load_hyper_params(&repo);
             let mut rng = rand::thread_rng();
-            let tokenizer = SimpleTokenizer::new("");
+            let tokenizer = Tokenizer::new("");
 
             assert_eq!(num_heads * head_size, embedding_dimension);
 
@@ -108,7 +108,7 @@ fn main() -> Result<(), GraphError> {
             // NOTE: Feed-Forward dimension is always `embedding_dimension * 4`.
             let (embedding_dimension, num_layers, num_heads, head_size) = load_hyper_params(&repo);
             initialize_log();
-            let tokenizer = SimpleTokenizer::new("");
+            let tokenizer = Tokenizer::new("");
             let mut rng = rand::thread_rng();
             let vocab_size = tokenizer.vocab_size();
 
@@ -179,7 +179,7 @@ fn main() -> Result<(), GraphError> {
                 file_index += 1;
                 println!("Reading {dataset_file}...");
                 let dataset_char = ragit_fs::read_string(&dataset_file).expect("Should have been able to read the file");
-                let tokenizer = SimpleTokenizer::new(&dataset_char);
+                let tokenizer = Tokenizer::new(&dataset_char);
                 let dataset = tokenizer.tokenize(&dataset_char);
 
                 // Training loop!

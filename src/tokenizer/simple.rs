@@ -1,22 +1,52 @@
-use super::Tokenizer;
+use super::TokenizerImpl;
+use std::collections::{HashMap, HashSet};
 
-// byte tokenizer
-pub struct SimpleTokenizer {}
+pub struct SimpleTokenizer {
+    vocab_size: usize,
+    ch_to_int: HashMap<char, usize>,
+    int_to_ch: HashMap<usize, char>,
+}
 
 impl SimpleTokenizer {
-    pub fn new(_dataset: &str) -> Self {
-        Self {}
+    pub fn new(dataset: &str) -> Self {
+        let mut chars = dataset
+            .chars()
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
+        chars.sort();
+        let int_to_ch = chars
+            .iter()
+            .enumerate()
+            .map(|(i, ch)| (i, *ch))
+            .collect::<HashMap<usize, char>>();
+        let ch_to_int = chars
+            .iter()
+            .enumerate()
+            .map(|(i, ch)| (*ch, i))
+            .collect::<HashMap<char, usize>>();
+        Self {
+            vocab_size: chars.len(),
+            int_to_ch,
+            ch_to_int,
+        }
     }
 }
 
-impl Tokenizer for SimpleTokenizer {
+impl TokenizerImpl for SimpleTokenizer {
     fn vocab_size(&self) -> usize {
-        256
+        self.vocab_size
     }
     fn tokenize(&self, string: &str) -> Vec<usize> {
-        string.bytes().map(|b| b as usize).collect()
+        string
+            .chars()
+            .map(|ch| self.ch_to_int.get(&ch).unwrap().clone())
+            .collect()
     }
     fn untokenize(&self, tokens: &[usize]) -> String {
-        String::from_utf8_lossy(&tokens.iter().map(|b| *b as u8).collect::<Vec<u8>>()).to_string()
+        tokens
+            .iter()
+            .map(|tkn| self.int_to_ch.get(tkn).unwrap().clone())
+            .collect()
     }
 }
