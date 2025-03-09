@@ -186,7 +186,7 @@ fn main() -> Result<(), GraphError> {
                 #[cfg(not(feature = "gpu"))]
                 gpt.train_cpu(
                     &dataset,
-                    400,
+                    500,
                     batch_size,
                     None, // or Some(n), limit backward process to last n computations
                     &AdamW::new(),
@@ -197,7 +197,7 @@ fn main() -> Result<(), GraphError> {
                 #[cfg(feature = "gpu")]
                 gpt.train(
                     &dataset,
-                    400,
+                    500,
                     batch_size,
                     None, // or Some(n), limit backward process to last n computations
                     &AdamW::new(),
