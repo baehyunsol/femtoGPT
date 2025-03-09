@@ -4,3 +4,6 @@ Cargo.lock
 
 # log file
 *.db
+
+# interact with ec2
+send.nu

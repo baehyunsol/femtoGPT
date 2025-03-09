@@ -13,4 +13,4 @@ pub trait TokenizerImpl {
     fn untokenize(&self, tokens: &[usize]) -> String;
 }
 
-pub type Tokenizer = SimpleTokenizer;
+pub type Tokenizer = ByteTokenizer;

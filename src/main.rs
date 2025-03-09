@@ -143,7 +143,7 @@ fn main() -> Result<(), GraphError> {
             let base_lr = 0.001;
             let min_lr = 0.00001;
             let warmup_steps = 100;
-            let decay_steps = 50000;
+            let decay_steps = 300;
 
             let learning_rate = |step| {
                 if step < warmup_steps {
@@ -186,7 +186,7 @@ fn main() -> Result<(), GraphError> {
                 #[cfg(not(feature = "gpu"))]
                 gpt.train_cpu(
                     &dataset,
-                    40,
+                    400,
                     batch_size,
                     None, // or Some(n), limit backward process to last n computations
                     &AdamW::new(),
@@ -197,7 +197,7 @@ fn main() -> Result<(), GraphError> {
                 #[cfg(feature = "gpu")]
                 gpt.train(
                     &dataset,
-                    40,
+                    400,
                     batch_size,
                     None, // or Some(n), limit backward process to last n computations
                     &AdamW::new(),
