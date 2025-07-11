@@ -5,6 +5,7 @@ use ragit_fs::FileError;
 pub enum Error {
     GraphError(GraphError),
     FileError(FileError),
+    StdIoError(std::io::Error),
     CliError {
         message: String,
         span: (String, usize, usize),  // (args, error_from, error_to)
@@ -21,6 +22,12 @@ impl From<GraphError> for Error {
 impl From<FileError> for Error {
     fn from(e: FileError) -> Error {
         Error::FileError(e)
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Error {
+        Error::StdIoError(e)
     }
 }
 

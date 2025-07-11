@@ -29,6 +29,7 @@ use ragit_fs::{
 };
 use rand::seq::SliceRandom;
 use std::collections::HashMap;
+use std::io::Write;
 
 fn main() {
     if let Err(e) = run() {
@@ -69,6 +70,7 @@ fn run() -> Result<(), Error> {
     match args.get(1).map(|arg| arg.as_str()) {
         Some("init") => {
             let parsed_args = ArgParser::new()
+                .optional_flag(&["--interactive"])
                 .arg_flag_with_default("--model", "model.dat", ArgType::Path)
                 .arg_flag_with_default("--tokenizer", "byte", ArgType::String)
                 .arg_flag_with_default("--tokenizer-data", "tokenizer.json", ArgType::Path)
@@ -76,16 +78,64 @@ fn run() -> Result<(), Error> {
                 .arg_flag_with_default("--embedding-degree", "80", ArgType::IntegerBetween { min: Some(0), max: None })
                 .arg_flag_with_default("--num-layers", "4", ArgType::IntegerBetween { min: Some(0), max: None })
                 .arg_flag_with_default("--num-heads", "4", ArgType::IntegerBetween { min: Some(0), max: None })
+                .short_flag(&["--interactive"])
                 .args(ArgType::Path, ArgCount::None)
                 .parse(&args, 2)?;
 
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
-            let tokenizer = parsed_args.arg_flags.get("--tokenizer").unwrap().to_string();
-            let tokenizer_data = parsed_args.arg_flags.get("--tokenizer-data").unwrap().to_string();
-            let num_tokens = parsed_args.arg_flags.get("--num-tokens").unwrap().parse::<usize>().unwrap();
-            let embedding_degree = parsed_args.arg_flags.get("--embedding-degree").unwrap().parse::<usize>().unwrap();
-            let num_layers = parsed_args.arg_flags.get("--num-layers").unwrap().parse::<usize>().unwrap();
-            let num_heads = parsed_args.arg_flags.get("--num-heads").unwrap().parse::<usize>().unwrap();
+            let mut tokenizer = parsed_args.arg_flags.get("--tokenizer").unwrap().to_string();
+            let mut tokenizer_data = parsed_args.arg_flags.get("--tokenizer-data").unwrap().to_string();
+            let mut num_tokens = parsed_args.arg_flags.get("--num-tokens").unwrap().parse::<usize>().unwrap();
+            let mut embedding_degree = parsed_args.arg_flags.get("--embedding-degree").unwrap().parse::<usize>().unwrap();
+            let mut num_layers = parsed_args.arg_flags.get("--num-layers").unwrap().parse::<usize>().unwrap();
+            let mut num_heads = parsed_args.arg_flags.get("--num-heads").unwrap().parse::<usize>().unwrap();
+
+            if parsed_args.get_flag(0).is_some() {
+                let mut s = String::new();
+
+                println!("Select tokenizer: byte or bpe (default: byte)");
+                print!(">>> ");
+                std::io::stdout().flush()?;
+                std::io::stdin().read_line(&mut s)?;
+                tokenizer = s.trim().to_string();
+                s = String::new();
+
+                if tokenizer == "bpe" {
+                    println!("Select tokenizer data file (default: tokenizer.json)");
+                    print!(">>> ");
+                    std::io::stdout().flush()?;
+                    std::io::stdin().read_line(&mut s)?;
+                    tokenizer_data = s.trim().to_string();
+                    s = String::new();
+                }
+
+                println!("Set num tokens (default: 80)");
+                print!(">>> ");
+                std::io::stdout().flush()?;
+                std::io::stdin().read_line(&mut s)?;
+                num_tokens = s.trim().parse().unwrap();
+                s = String::new();
+
+                println!("Set embedding degree (default: 80)");
+                print!(">>> ");
+                std::io::stdout().flush()?;
+                std::io::stdin().read_line(&mut s)?;
+                embedding_degree = s.trim().parse().unwrap();
+                s = String::new();
+
+                println!("Set num layers (default: 4)");
+                print!(">>> ");
+                std::io::stdout().flush()?;
+                std::io::stdin().read_line(&mut s)?;
+                num_layers = s.trim().parse().unwrap();
+                s = String::new();
+
+                println!("Set num heads (default: 4)");
+                print!(">>> ");
+                std::io::stdout().flush()?;
+                std::io::stdin().read_line(&mut s)?;
+                num_heads = s.trim().parse().unwrap();
+            }
 
             let head_size = embedding_degree / num_heads;
             assert_eq!(head_size * num_heads, embedding_degree);
@@ -114,6 +164,7 @@ fn run() -> Result<(), Error> {
                 dropout,
             )?;
             gpt.sync()?;
+            println!("Successfully initialized a model with {} parameters", gpt.num_params());
 
             let training_state = gpt.get_training_state().unwrap();
             let model = Model {

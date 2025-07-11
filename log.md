@@ -166,3 +166,16 @@ I only had a few minutes and it's not enough to train this size of model. I have
 It's using 3~4 GiB of RAM, when `num_tokens` is 80.
 
 I just wanted to test the new bpe tokenizer. I guess I have to increase the vocab size!
+
+# 13. Training a very large model (fail)
+
+- tokenizer: byte
+  - It doesn't matter, though
+- embedding degree: 640, num layers: 8, num heads: 16 (39.7M parameters)
+- dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- step: n/a, loss: n/a, elapsed: n/a (Intel Core Ultra 7 155H)
+- data: doesn't matter
+
+I wanted to see how much memory does it take to train this large model.
+
+The first step was fine, it consumed about 10 GiB of RAM, when `num_tokens` is 80. The first step took 18 seconds. But at the second step, it started consuming 90% of RAM (my machine has 32GB), so I just killed it.
