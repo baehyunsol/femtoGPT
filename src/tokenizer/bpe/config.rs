@@ -11,12 +11,12 @@ pub struct BpeConfig {
     pub unit: Unit,
     pub unk_token: String,
 
-    pub dictionary_size: usize,
+    pub vocab_size: usize,
 
     // It affects the initial dictionary build from `CharCount`.
     // It'd replace uncommon characters with unk_token.
     // It affects both `Unit::Char` and `Unit::Byte`.
-    pub char_dictionary_size: Option<usize>,
+    pub char_vocab_size: Option<usize>,
 }
 
 impl Default for BpeConfig {
@@ -24,8 +24,8 @@ impl Default for BpeConfig {
         BpeConfig {
             unit: Unit::Char,
             unk_token: String::from("<unk>"),
-            dictionary_size: 768,
-            char_dictionary_size: Some(512),
+            vocab_size: 768,
+            char_vocab_size: Some(512),
         }
     }
 }

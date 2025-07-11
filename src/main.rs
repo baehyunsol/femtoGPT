@@ -410,15 +410,18 @@ fn run() -> Result<(), Error> {
             let parsed_args = ArgParser::new()
                 .arg_flag_with_default("--dataset", "dataset.txt", ArgType::Path)
                 .arg_flag_with_default("--tokenizer-data", "tokenizer.json", ArgType::Path)
+                .arg_flag_with_default("--vocab-size", "768", ArgType::IntegerBetween { min: Some(600), max: None })
                 .arg_flag_with_default("--epoch", "50", ArgType::IntegerBetween { min: Some(1), max: None})
                 .args(ArgType::Path, ArgCount::None)
                 .parse(&args, 2)?;
 
             let dataset = parsed_args.arg_flags.get("--dataset").unwrap().to_string();
             let tokenizer_data = parsed_args.arg_flags.get("--tokenizer-data").unwrap().to_string();
+            let vocab_size = parsed_args.arg_flags.get("--vocab-size").unwrap().parse::<usize>().unwrap();
             let epoch = parsed_args.arg_flags.get("--epoch").unwrap().parse::<usize>().unwrap();
 
-            let config = BpeConfig::default();
+            let mut config = BpeConfig::default();
+            config.vocab_size = vocab_size;
             let char_count = count_chars(&dataset, &config)?;
             let mut tokenizer = BpeTokenizerInner::from_char_count(&char_count, &config);
 

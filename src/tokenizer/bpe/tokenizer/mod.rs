@@ -71,7 +71,7 @@ impl Tokenizer {
             counts.insert(unk_bytes.to_vec(), 0);
         }
 
-        if let Some(limit) = config.char_dictionary_size {
+        if let Some(limit) = config.char_vocab_size {
             if counts.len() > limit {
                 let mut sortable = counts.iter().map(|(b, c)| (b.clone(), *c)).collect::<Vec<_>>();
                 sortable.sort_by_key(|(_, count)| u64::MAX - *count);
@@ -206,7 +206,7 @@ impl Tokenizer {
         config: &BpeConfig,
         dump_result_to: Option<String>,
     ) -> Result<(), Error> {
-        if self.tokens.len() > config.dictionary_size {
+        if self.tokens.len() > config.vocab_size {
             let state_machine = self.build_state_machine();
             let mut counts = self.tokens.keys().map(|token_id| (*token_id, 0)).collect::<HashMap<TokenId, u64>>();
             let files = if is_dir(dataset) {
@@ -251,10 +251,10 @@ impl Tokenizer {
             }
 
             // We should not remove `self.unk` from `self.tokens`. But at this point, we're not sure whether `self.unk` is included in `counts[dict_size..]` or `counts[..dict_size]`.
-            let extra = counts[config.dictionary_size - 1];
-            let mut removed_tokens = Vec::with_capacity(counts.len() - config.dictionary_size);
+            let extra = counts[config.vocab_size - 1];
+            let mut removed_tokens = Vec::with_capacity(counts.len() - config.vocab_size);
 
-            for (token, _) in counts[config.dictionary_size..].iter() {
+            for (token, _) in counts[config.vocab_size..].iter() {
                 if *token == self.unk {
                     removed_tokens.push((extra.0, self.decode_id(extra.0).unwrap()));
                     self.tokens.remove(&extra.0);
