@@ -4,7 +4,7 @@
 - embedding degree: 64, num layers: 4, num heads 4 (232K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 685, loss: 1.4672, elapsed: 2m 16s (apple M3 pro chip)
-- data: `python3 simple_dummy.py > dataset.txt`
+- data: `python3 dummy_data/simple_dummy.py > dataset.txt`
 
 It can produce a plausible output!!!
 
@@ -14,7 +14,7 @@ It can produce a plausible output!!!
 - embedding degree: 64, num layers: 4, num heads 4 (232K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 629, loss: 1.4760, elapsed: 2m 9s (apple M3 pro chip)
-- data: `python3 simple_dummy.py > dataset.txt`
+- data: `python3 dummy_data/simple_dummy.py > dataset.txt`
 
 It can produce a plausible output!!!
 
@@ -24,7 +24,7 @@ It can produce a plausible output!!!
 - embedding degree: 64, num layers: 6, num heads 4 (331K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 874, loss: 1.9082, elapsed: 4m 24s (apple M3 pro chip)
-- data: `python3 simple_dummy.py > dataset.txt`
+- data: `python3 dummy_data/simple_dummy.py > dataset.txt`
 
 Its output is not as good as #1 and #2.
 
@@ -76,7 +76,7 @@ Looking at its log_probs: `[(' ', 88.8%), ('}', 0.9%), ('l', 0.8%), ('i', 0.7%),
 - embedding degree: 64, num layers: 4, num heads 4 (232K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 716, loss: 1.3845, elapsed: 2m 24s (apple M3 pro chip)
-- data: `python3 addition_dummy.py > dataset.txt`
+- data: `python3 dummy_data/addition_dummy.py > dataset.txt`
 
 when prompted `13 + 29 = `,
 
@@ -104,7 +104,7 @@ It isn't that bad for this small model. Let's try again with a bigger one.
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 996, loss: 1.3336, elapsed: ?m ??s (apple M3 pro chip)
   - I forgot to record how long it took.
-- data: `python3 addition_dummy.py > dataset.txt`
+- data: `python3 dummy_data/addition_dummy.py > dataset.txt`
 
 It's using 0.8 ~ 1 GiB of RAM, when `num_tokens` is 64.
 
@@ -127,6 +127,6 @@ It isn't that different from #7.
 - embedding degree: 80, num layers: 6, num heads 4 (506K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 1856, loss: 1.4313, elapsed: 9m 52s (apple M3 pro chip)
-- data: `python3 simple_dummy.py > dataset.txt`
+- data: `python3 dummy_data/simple_dummy.py > dataset.txt`
 
 I just figured out why I have failed #3. It's because larger models take longer to train, but I trained them too shortly.
