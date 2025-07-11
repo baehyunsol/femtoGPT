@@ -134,7 +134,7 @@ I just figured out why I have failed #3. It's because larger models take longer 
 # 10. Training a very simple model 5 (success)
 
 - tokenizer: byte
-- embedding degree: 32, num layers: 4, num heads 2 (506K params)
+- embedding degree: 32, num layers: 4, num heads 2 (67K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 528, loss: 1.5303, elapsed: 0m 50s (Intel Core Ultra 7 155H)
 - data: `python3 dummy_data/simple_dummy.py > dataset.txt`
@@ -162,5 +162,7 @@ I only had a few minutes and it's not enough to train this size of model. I have
 - step: 338, loss: 5.8933, elapsed: ?m ??s (Intel Core Ultra 7 155H)
   - I forgot to record how long it took, but each step took roughly 1400 ~ 1500 ms.
 - data: the original dataset in femtoGPT (https://github.com/keyvank/femtoGPT/blob/d00da389998bcef3ba483bb7a0614f4e874e1d06/dataset.txt)
+
+It's using 3~4 GiB of RAM, when `num_tokens` is 80.
 
 I just wanted to test the new bpe tokenizer. I guess I have to increase the vocab size!
