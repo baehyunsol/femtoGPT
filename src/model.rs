@@ -7,8 +7,14 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Model {
-    // for now, the only available one is "byte"
+    // "byte" | "bpe"
     pub tokenizer: String,
+
+    // some tokenizers require an extra data
+    // I want it to be `serde_json::Value`,
+    // but it seems like `bincode` does not
+    // support the type.
+    pub tokenizer_data: String,
     pub hyper_parameters: HyperParameters,
     pub training_state: TrainingState,
 }

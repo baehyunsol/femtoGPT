@@ -2,12 +2,6 @@ use super::Tokenizer;
 
 pub struct ByteTokenizer;
 
-impl ByteTokenizer {
-    pub fn new() -> Self {
-        ByteTokenizer
-    }
-}
-
 impl Tokenizer for ByteTokenizer {
     fn name(&self) -> String {
         String::from("byte")

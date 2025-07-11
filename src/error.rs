@@ -9,6 +9,7 @@ pub enum Error {
         message: String,
         span: (String, usize, usize),  // (args, error_from, error_to)
     },
+    JsonSerdeError(serde_json::Error),
 }
 
 impl From<GraphError> for Error {
@@ -29,5 +30,11 @@ impl From<ragit_cli::Error> for Error {
             message: e.kind.render(),
             span: e.span.unwrap_rendered(),
         }
+    }
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(e: serde_json::Error) -> Error {
+        Error::JsonSerdeError(e)
     }
 }
