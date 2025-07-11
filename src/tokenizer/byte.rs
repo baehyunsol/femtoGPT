@@ -1,15 +1,17 @@
 use super::Tokenizer;
-use std::collections::{HashMap, HashSet};
 
 pub struct ByteTokenizer;
 
 impl ByteTokenizer {
-    pub fn new(_: &str) -> Self {
+    pub fn new() -> Self {
         ByteTokenizer
     }
 }
 
 impl Tokenizer for ByteTokenizer {
+    fn name(&self) -> String {
+        String::from("byte")
+    }
     fn vocab_size(&self) -> usize {
         256
     }

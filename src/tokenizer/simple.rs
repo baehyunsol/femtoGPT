@@ -34,6 +34,9 @@ impl SimpleTokenizer {
 }
 
 impl Tokenizer for SimpleTokenizer {
+    fn name(&self) -> String {
+        String::from("simple")
+    }
     fn vocab_size(&self) -> usize {
         self.vocab_size
     }

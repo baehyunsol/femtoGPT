@@ -1,2 +1,3 @@
 /target
-/training_state.dat
+/*.dat
+Cargo.lock

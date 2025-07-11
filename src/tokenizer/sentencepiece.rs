@@ -174,6 +174,9 @@ impl SentencePieceTokenizer {
 }
 
 impl Tokenizer for SentencePieceTokenizer {
+    fn name(&self) -> String {
+        String::from("sentence_piece")
+    }
     fn vocab_size(&self) -> usize {
         self.vocab.len()
     }
