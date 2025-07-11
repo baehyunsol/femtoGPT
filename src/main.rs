@@ -58,7 +58,6 @@ fn run() -> Result<(), Error> {
     let is_gpu = true;
 
     let batch_size = 32;
-    let dropout = 0.0;
 
     let mut tokenizers: HashMap<String, Box<dyn Tokenizer>> = vec![
         ("byte", Box::new(ByteTokenizer) as Box<dyn Tokenizer>),
@@ -161,7 +160,7 @@ fn run() -> Result<(), Error> {
                 num_layers,
                 num_heads,
                 head_size,
-                dropout,
+                0.0,  // dropout
             )?;
             gpt.sync()?;
             println!("Successfully initialized a model with {} parameters", gpt.num_params());
@@ -191,15 +190,15 @@ fn run() -> Result<(), Error> {
             let parsed_args = ArgParser::new()
                 .arg_flag_with_default("--model", "model.dat", ArgType::Path)
                 .arg_flag_with_default("--count", "100", ArgType::IntegerBetween { min: Some(1), max: None })
-                // TODO: `ArgType::Float`
-                // .arg_flag_with_default("--temperature", "0.5", ArgType::FloatBetween { min: Some(0.01), max: Some(0.99) })
+                // TODO: `ArgType::FloatBetween`
+                .arg_flag_with_default("--temperature", "0.5", ArgType::String)
                 .args(ArgType::String, ArgCount::Exact(1))
                 .parse(&args, 2)?;
 
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
             let count = parsed_args.arg_flags.get("--count").unwrap().parse::<usize>().unwrap();
+            let temperature = parsed_args.arg_flags.get("--temperature").unwrap().parse::<f32>().unwrap();
             let prompt = parsed_args.get_args_exact(1)?[0].to_string();
-            let temperature = 0.5;  // TODO
 
             let bytes = read_bytes(&model_path)?;
             let model: Model = bincode::deserialize(&bytes).unwrap();
@@ -233,7 +232,9 @@ fn run() -> Result<(), Error> {
                 num_layers,
                 num_heads,
                 head_size,
-                dropout,
+
+                // We don't need dropouts for inference, right?
+                0.0,  // dropout
             )?;
             println!("Successfully loaded a model with {} parameters", gpt.num_params());
             println!("Vocab-size: {} tokens", vocab_size);
@@ -260,14 +261,15 @@ fn run() -> Result<(), Error> {
             let parsed_args = ArgParser::new()
                 .arg_flag_with_default("--model", "model.dat", ArgType::Path)
                 .arg_flag_with_default("--dataset", "dataset.txt", ArgType::Path)
-                // TODO: `ArgType::Float`
-                // .arg_flag_with_default("--dropout", "0", ArgType::FloatBetween { min: Some(0.0), max: Some(0.99) })
+                // TODO: `ArgType::FloatBetween`
+                .arg_flag_with_default("--dropout", "0", ArgType::String)
                 .optional_flag(&["--reset-optimizer"])
                 .args(ArgType::Path, ArgCount::None)
                 .parse(&args, 2)?;
 
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
             let dataset = parsed_args.arg_flags.get("--dataset").unwrap().to_string();
+            let dropout = parsed_args.arg_flags.get("--dropout").unwrap().parse::<f32>().unwrap();
             let reset_optimizer = parsed_args.get_flag(0).is_some();
 
             let bytes = read_bytes(&model_path)?;
