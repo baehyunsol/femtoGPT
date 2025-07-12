@@ -181,7 +181,7 @@ fn run() -> Result<(), Error> {
             write_bytes(
                 &model_path,
                 &bytes,
-                WriteMode::CreateOrTruncate,
+                WriteMode::Atomic,
             )?;
 
             Ok(())
@@ -377,7 +377,7 @@ fn run() -> Result<(), Error> {
                 write_bytes(
                     &model_path,
                     &bytes,
-                    WriteMode::CreateOrTruncate,
+                    WriteMode::Atomic,
                 ).unwrap();
 
                 Ok(())
