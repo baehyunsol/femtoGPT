@@ -236,3 +236,42 @@ I don't understand. I just want it to generate lines that *look like* additions,
 - data: `python3 dummy_data/addition_dummy.py > dataset.txt`
 
 I was curious whether setting dropout to 0.1 might change something. It didn't.
+
+# 17. Training an addition model 5 (fail)
+
+- tokenizer: byte
+- embedding degree: 80, num layers 4, num heads: 4 (351K parameters)
+- dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- step: 676, loss: 1.4216, elapsed: 3m 4s (Intel Core Ultra 7 155H)
+  - NOTE: It took about 300 steps to reach loss 2.0.
+- data: `python3 dummy_data/addition_dummy.py > dataset.txt`
+
+Below is the response. I won't mark it "success" until it dumps `r"\d+\s?\+\d+\s?\=\d+\;\n"`.
+
+```
+10;
+1;
+1 + 15;
+9 + 14 + 12 + 65;
+1 + = 5615 = 54;
+9;
+6 + = 9;
+1;
+5 = 61;
+10 + 1;
+5;
+9 + = 11140 = 9;
+```
+
+It converged much faster than #15 and #16, though. Maybe #15 would converge if I had more patience.
+
+# 18. Training a Rust coder 4 (fail)
+
+- tokenizer: bpe (1054 tokens)
+- embedding: 80, num layers: 4, num heads: 4 (480K parameters)
+- dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- step: 1018, loss: 4.7967, elapsed: ?m ??s (Intel Core Ultra 7 155H)
+  - Each step took roughly 300 ms
+- data: that of #14
+
+It might converge someday. I'll try a bit larger model with the same dataset before I go to bed tonight.
