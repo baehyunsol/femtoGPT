@@ -179,3 +179,60 @@ I just wanted to test the new bpe tokenizer. I guess I have to increase the voca
 I wanted to see how much memory does it take to train this large model.
 
 The first step was fine, it consumed about 10 GiB of RAM, when `num_tokens` is 80. The first step took 18 seconds. But at the second step, it started consuming 90% of RAM (my machine has 32GB), so I just killed it.
+
+# 14. Training a very large model (fail)
+
+- tokenizer: bpe (1054 tokens)
+- embedding degree: 768, num layers: 8, num heads: 16 (58.3M parameters)
+- dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- step: 689, loss: 6.4152, elapsed: 9h 52m (AWS EC2 m5.4xlarge: 16vCPU, 64GB RAM)
+  - Each step takes roughly a minute...
+- data: see below
+
+It's using 40~50 GiB of RAM, when `num_tokens` is 80.
+
+It would take at least a few hundred hours to train this. I guess I have to try smaller models first.
+
+How to run:
+
+```sh
+git -C .. clone https://github.com/baehyunsol/ragit
+git -C ../ragit checkout e12153573
+git -C .. clone https://github.com/gleam-lang/gleam
+git -C ../gleam checkout bed57729d
+git -C .. clone https://github.com/seanmonstar/warp
+git -C ../warp checkout 1cbf029b1
+git -C .. clone https://github.com/getzola/zola
+git -C ../zola checkout c1b105051
+
+cat ../ragit/src/**/*.rs ../gleam/compiler-core/src/**/*.rs ../warp/src/**/*.rs ../zola/src/**/*.rs src/**/*.rs > dataset.txt
+
+cargo run --release -- train-bpe --epoch=100 --vocab-size=1024
+cargo run --release -- init --tokenizer=bpe --num-tokens=80 --embedding-degree=768 --num-layers=8 --num-heads=16
+nohup cargo run --release -- train --dropout=0.1 &
+```
+
+# 15. Training an addition model 3 (fail)
+
+- tokenizer: byte
+- embedding degree: 160, num layers: 6, num heads: 8 (1.9M parameters)
+- dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- step: 802, loss: 2.4628, elapsed: 15m 20s (Intel Core Ultra 7 155H)
+- data: `python3 dummy_data/addition_dummy.py > dataset.txt`
+
+I don't understand. I just want it to generate lines that *look like* additions, even though the calculations are wrong. Below is the output that it generates.
+
+```
+1 + 1 =       ;  = 1=;11+= =   =   1 ;;1    1  11=1 ; 1 =  1 1= =; = 1= ; =;  1;1 ; ;      ==1= ;1==       =
+```
+
+# 16. Training an addition model 4 (fail)
+
+- tokenizer: byte
+- embedding degree: 160, num layers: 6, num heads: 8 (1.9M parameters)
+- dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- step: 360, loss: 2.4748, elapsed: 6m 56s (Intel Core Ultra 7 155H)
+  - NOTE: #15 reached loss 2.4 at around 200 step, and stuck there for 600 steps
+- data: `python3 dummy_data/addition_dummy.py > dataset.txt`
+
+I was curious whether setting dropout to 0.1 might change something. It didn't.

@@ -9,7 +9,7 @@ def dump():
     result = ""
     last_3_prefixes = []
 
-    for _ in range(2000):
+    for _ in range(8000):
         # - a word starts with a consonant
         # - recently used prefixes are not used again
         while (prefix := random_consonant()) in last_3_prefixes:
