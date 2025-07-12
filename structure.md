@@ -2,14 +2,34 @@
 
 ```rs
 struct TrainingState {
-    pub tensors: HashMap<String, Tensor<f32>>,
-    pub optimizer: OptimizerState,
+    tensors: HashMap<String, Tensor<f32>>,
+    optimizer: OptimizerState,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct OptimizerState {
-    pub step: usize,
-    pub state: HashMap<String, Tensor<f32>>,
+struct OptimizerState {
+    step: usize,
+    state: HashMap<String, Tensor<f32>>,
+}
+
+struct Model {
+    // "byte" | "bpe"
+    tokenizer: String,
+
+    // some tokenizers require an extra data
+    // I want it to be `serde_json::Value`,
+    // but it seems like `bincode` does not
+    // support the type.
+    tokenizer_data: String,
+    hyper_parameters: HyperParameters,
+    training_state: TrainingState,
+}
+
+struct HyperParameters {
+    // It's like a max-context-size
+    num_tokens: usize,
+    embedding_degree: usize,
+    num_layers: usize,
+    num_heads: usize,
 }
 ```
 
@@ -31,7 +51,7 @@ pub struct OptimizerState {
     - add attention results to input and then normalize
     - X: layer
     - dim: `embedding_degree`
-  - `feedforward1_<X>_bias`, `feedforward2_<X>_weights`
+  - `feedforward1_<X>_bias`, `feedforward1_<X>_weights`, `feedforward2_<X>_bias`, `feedforward2_<X>_weights`
     - X: layer
     - dim (ff1 weights): `embedding_degree * (embedding_degree * 4)`
     - dim (ff1 bias): `embedding_degree * 4`

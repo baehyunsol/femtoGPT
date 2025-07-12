@@ -11,6 +11,7 @@ pub enum Error {
         span: (String, usize, usize),  // (args, error_from, error_to)
     },
     JsonSerdeError(serde_json::Error),
+    BincodeError(Box<bincode::ErrorKind>),
 }
 
 impl From<GraphError> for Error {
@@ -43,5 +44,11 @@ impl From<ragit_cli::Error> for Error {
 impl From<serde_json::Error> for Error {
     fn from(e: serde_json::Error) -> Error {
         Error::JsonSerdeError(e)
+    }
+}
+
+impl From<Box<bincode::ErrorKind>> for Error {
+    fn from(e: Box<bincode::ErrorKind>) -> Error {
+        Error::BincodeError(e)
     }
 }

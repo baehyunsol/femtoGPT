@@ -177,7 +177,7 @@ fn run() -> Result<(), Error> {
                 },
                 training_state,
             };
-            let bytes = bincode::serialize(&model).unwrap();
+            let bytes = bincode::serialize(&model)?;
             write_bytes(
                 &model_path,
                 &bytes,
@@ -201,7 +201,7 @@ fn run() -> Result<(), Error> {
             let prompt = parsed_args.get_args_exact(1)?[0].to_string();
 
             let bytes = read_bytes(&model_path)?;
-            let model: Model = bincode::deserialize(&bytes).unwrap();
+            let model: Model = bincode::deserialize(&bytes)?;
             let HyperParameters {
                 num_tokens,
                 embedding_degree,
@@ -498,6 +498,133 @@ fn run() -> Result<(), Error> {
                     println!("    head {i}: {rendered}");
                 }
             }
+
+            Ok(())
+        },
+        Some("extend-layer") => {
+            let parsed_args = ArgParser::new()
+                .arg_flag_with_default("--input", "model.dat", ArgType::Path)
+                .arg_flag_with_default("--output", "extended.dat", ArgType::Path)
+                .arg_flag_with_default("--insert-at", "1", ArgType::IntegerBetween { min: Some(0), max: None })
+                .args(ArgType::Path, ArgCount::None)
+                .parse(&args, 2)?;
+
+            let input_path = parsed_args.arg_flags.get("--input").unwrap().to_string();
+            let output_path = parsed_args.arg_flags.get("--output").unwrap().to_string();
+            let insert_at = parsed_args.arg_flags.get("--insert-at").unwrap().parse::<usize>().unwrap();
+
+            let bytes = read_bytes(&input_path)?;
+            let mut model: Model = bincode::deserialize(&bytes).unwrap();
+            let tokenizer = tokenizers.get_mut(&model.tokenizer).unwrap();
+
+            if tokenizer.has_to_load() {
+                tokenizer.load_from_json(&model.tokenizer_data)?;
+            }
+
+            let vocab_size = tokenizer.vocab_size();
+            let mut rng = rand::thread_rng();
+
+            model.hyper_parameters.num_layers += 1;
+            let HyperParameters {
+                num_tokens,
+                embedding_degree,
+                num_layers,
+                num_heads,
+            } = model.hyper_parameters;
+            let head_size = embedding_degree / num_heads;
+
+            // It has to be trained again from scratch.
+            // But it would converge much faster... I hope!
+            model.training_state.optimizer = Default::default();
+
+            let mut new_tensors = HashMap::new();
+
+            for key in [
+                "token_embedding",
+                "head_norm_bias",
+                "head_norm_coeff",
+                "head_map_bias",
+                "head_map_weights",
+            ] {
+                new_tensors.insert(
+                    key.to_string(),
+                    model.training_state.tensors.remove(key).unwrap(),
+                );
+            }
+
+            for i in 0..(num_layers - 1) {
+                let new_i = if i < insert_at { i } else { i + 1 };
+
+                for (new_key, old_key) in [
+                    (format!("norm_{new_i}_bias"), format!("norm_{i}_bias")),
+                    (format!("norm_{new_i}_coeff"), format!("norm_{i}_coeff")),
+                    (format!("proj_{new_i}_bias"), format!("proj_{i}_bias")),
+                    (format!("proj_{new_i}_weights"), format!("proj_{i}_weights")),
+                    (format!("atten_norm_{new_i}_bias"), format!("atten_norm_{i}_bias")),
+                    (format!("atten_norm_{new_i}_coeff"), format!("atten_norm_{i}_coeff")),
+                    (format!("feedforward1_{new_i}_bias"), format!("feedforward1_{i}_bias")),
+                    (format!("feedforward1_{new_i}_weights"), format!("feedforward1_{i}_weights")),
+                    (format!("feedforward2_{new_i}_bias"), format!("feedforward2_{i}_bias")),
+                    (format!("feedforward2_{new_i}_weights"), format!("feedforward2_{i}_weights")),
+                ] {
+                    new_tensors.insert(
+                        new_key,
+                        model.training_state.tensors.remove(&old_key).unwrap(),
+                    );
+                }
+
+                for head in 0..num_heads {
+                    for (new_key, old_key) in [
+                        (format!("head_{new_i}_{head}_k"), format!("head_{i}_{head}_k")),
+                        (format!("head_{new_i}_{head}_q"), format!("head_{i}_{head}_q")),
+                        (format!("head_{new_i}_{head}_v"), format!("head_{i}_{head}_v")),
+                    ] {
+                        new_tensors.insert(
+                            new_key,
+                            model.training_state.tensors.remove(&old_key).unwrap(),
+                        );
+                    }
+                }
+            }
+
+            assert_eq!(model.training_state.tensors.len(), 0);
+
+            // we're NOT setting the parameters of the new layer
+            // instead, we'll instantiate an empty GPT and write the new training
+            // state to the empty GPT.
+            let bytes = bincode::serialize(&model)?;
+            write_bytes(
+                &output_path,
+                &bytes,
+                WriteMode::Atomic,
+            )?;
+
+            let mut gpt = GPT::new(
+                &mut rng,
+                graph,
+                is_gpu.then(|| batch_size), // Pre-allocate batches only when using GPUs
+                vocab_size,
+                embedding_degree,
+                num_tokens,
+                num_layers,
+                num_heads,
+                head_size,
+                0.0,  // dropout
+            )?;
+            gpt.sync()?;
+            gpt.set_training_state(model.training_state.clone(), false)?;
+
+            let training_state = gpt.get_training_state()?;
+            let model = Model {
+                training_state,
+                ..model.clone()
+            };
+            let bytes = bincode::serialize(&model)?;
+            write_bytes(
+                &output_path,
+                &bytes,
+                WriteMode::Atomic,
+            )?;
 
             Ok(())
         },
