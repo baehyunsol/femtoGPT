@@ -286,3 +286,30 @@ It might converge someday. I'll try a bit larger model with the same dataset bef
 - data: that of #14
 
 It's using 3~5 GiB of RAM, when `num_tokens` is 80.
+
+# 20. Training a simple model 1
+
+- tokenizer: byte
+- embedding degree: 80, num layers: 4, num heads 4 (351K params)
+- dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- step: 1447, loss: 1.6670, elapsed: ?m ??s (Intel Core Ultra 7 155H)
+- data: `python3 dummy_data/simple_dummy2.py > dataset.txt`
+
+Evaluation
+
+| action | correct  | incorrect  | correct ratio  |
+|--------|----------|------------|----------------|
+| 0      | 10       |  0         | 100%           |
+| 1      |  0       | 11         |   0%           |
+| 2      |  0       |  9         |   0%           |
+| 3      |  0       |  7         |   0%           |
+| 4      |  0       | 10         |   0%           |
+| 5      |  0       |  8         |   0%           |
+| 6      |  0       | 17         |   0%           |
+| 7      |  0       | 10         |   0%           |
+| 8      |  0       |  6         |   0%           |
+| 9      | 12       |  0         | 100%           |
+
+It doesn't understand what each action does, but it generates lines that resemble dataset.
+
+I'll mark it "success" if all the action's correct ratios are greater than 70%
