@@ -275,3 +275,14 @@ It converged much faster than #15 and #16, though. Maybe #15 would converge if I
 - data: that of #14
 
 It might converge someday. I'll try a bit larger model with the same dataset before I go to bed tonight.
+
+# 19. Training a Rust coder 5 (fail)
+
+- tokenizer: bpe (1054 tokens)
+- embedding degree: 192, num layers: 8, num heads: 8 (3.9M parameters)
+- dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- step: 7684, loss: 6.4670, elapsed: 8 ~ 9 hours (AWS EC2 m5.4xlarge: 16vCPU, 64GB RAM)
+  - Each step takes roughly 3 ~ 4 seconds...
+- data: that of #14
+
+It's using 3~5 GiB of RAM, when `num_tokens` is 80.
