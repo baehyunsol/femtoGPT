@@ -1,5 +1,6 @@
 use crate::funcs::*;
 use crate::graph::{Graph, GraphError, TensorId};
+use crate::model::Log;
 use crate::optimizer::{Optimizer, OptimizerState};
 use crate::tensor::{GeneralTensor, Tensor, TensorError, TensorOps};
 use rand::Rng;
@@ -23,6 +24,7 @@ pub struct GPT<G: Graph> {
     expected_output: TensorId,
     loss: TensorId,
     pos_input_fixed: Tensor<f32>,
+    pub logs: Vec<Log>,
 }
 
 fn sample_dataset<R: Rng>(
@@ -112,6 +114,7 @@ impl<G: Graph> GPT<G> {
         num_heads: usize,
         head_size: usize,
         dropout: f32,
+        logs: Vec<Log>,
     ) -> Result<Self, GraphError> {
         // Mapping each token to a `embedding_degree` dimension space through a lookup table
         let token_embedding = g.alloc(
@@ -319,6 +322,7 @@ impl<G: Graph> GPT<G> {
             output,
             expected_output,
             loss,
+            logs,
             pos_input_fixed: pos_encode_inter(num_tokens, embedding_degree),
         })
     }
@@ -430,6 +434,9 @@ impl<G: Graph> GPT<G> {
             let avg_loss = errs.iter().sum::<f32>() / errs.len() as f32;
             let lr = learning_rate(self.graph.optimizer_step());
             self.graph.optimize(optimizer, lr)?;
+            let elapsed = timer.elapsed().as_millis();
+            self.logs.push(Log::train_step(avg_loss, elapsed as u64, cfg!(feature = "gpu")));
+
             if i % 10 == 0 {
                 self.sync()?;
                 callback(self)?;
@@ -438,7 +445,7 @@ impl<G: Graph> GPT<G> {
                 "Step: {} Loss: {} (Elapsed: {}ms)",
                 self.graph.optimizer_step(),
                 avg_loss,
-                timer.elapsed().as_millis()
+                elapsed,
             );
         }
         Ok(())
@@ -469,6 +476,9 @@ impl<G: Graph> GPT<G> {
             let err = self.graph.backward_all(self.loss, limit)?;
             let lr = learning_rate(self.graph.optimizer_step());
             self.graph.optimize(optimizer, lr)?;
+            let elapsed = timer.elapsed().as_millis();
+            self.logs.push(Log::train_step(err, elapsed as u64, cfg!(feature = "gpu")));
+
             if i % 50 == 0 {
                 callback(self)?;
             }
@@ -476,7 +486,7 @@ impl<G: Graph> GPT<G> {
                 "Step: {} Loss: {} (Elapsed: {}ms)",
                 self.graph.optimizer_step(),
                 err,
-                timer.elapsed().as_millis()
+                elapsed,
             );
         }
         Ok(())

@@ -1,6 +1,13 @@
 use femto_gpt::error::Error;
 use femto_gpt::gpt::GPT;
-use femto_gpt::model::{Model, Hyperparameters};
+use femto_gpt::model::{
+    Hyperparameters,
+    Log,
+    Model,
+    ModelInfo,
+    TokenInfo,
+    f2s,
+};
 use femto_gpt::optimizer::AdamW;
 use femto_gpt::tensor::TensorOps;
 use femto_gpt::tokenizer::{
@@ -161,21 +168,26 @@ fn run() -> Result<(), Error> {
                 num_heads,
                 head_size,
                 0.0,  // dropout
+                vec![],  // logs
             )?;
             gpt.sync()?;
             println!("Successfully initialized a model with {} parameters", gpt.num_params());
 
             let training_state = gpt.get_training_state().unwrap();
+            let hyperparameters = Hyperparameters {
+                num_tokens,
+                vocab_size,
+                embedding_degree,
+                num_layers,
+                num_heads,
+                head_size,
+            };
             let model = Model {
                 tokenizer: tokenizer.name(),
                 tokenizer_data: tokenizer.dump_json()?,
-                hyperparameters: Hyperparameters {
-                    num_tokens,
-                    embedding_degree,
-                    num_layers,
-                    num_heads,
-                },
+                hyperparameters,
                 training_state,
+                logs: vec![Log::init(hyperparameters)],
             };
             let bytes = bincode::serialize(&model)?;
             write_bytes(
@@ -204,11 +216,12 @@ fn run() -> Result<(), Error> {
             let model: Model = bincode::deserialize(&bytes)?;
             let Hyperparameters {
                 num_tokens,
+                vocab_size,
                 embedding_degree,
                 num_layers,
                 num_heads,
+                head_size,
             } = model.hyperparameters;
-            let head_size = embedding_degree / num_heads;
 
             let mut rng = rand::thread_rng();
             let tokenizer = tokenizers.get_mut(&model.tokenizer).unwrap();
@@ -219,9 +232,6 @@ fn run() -> Result<(), Error> {
 
             let ts = model.training_state;
 
-            assert_eq!(num_heads * head_size, embedding_degree);
-
-            let vocab_size = tokenizer.vocab_size();
             let mut gpt = GPT::new(
                 &mut rng,
                 graph,
@@ -235,6 +245,9 @@ fn run() -> Result<(), Error> {
 
                 // We don't need dropouts for inference, right?
                 0.0,  // dropout
+
+                // Do we have to log inferences?
+                vec![],  // logs
             )?;
             println!("Successfully loaded a model with {} parameters", gpt.num_params());
             println!("Vocab-size: {} tokens", vocab_size);
@@ -269,24 +282,32 @@ fn run() -> Result<(), Error> {
                 .parse(&args, 2)?;
 
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
-            let dataset = parsed_args.arg_flags.get("--dataset").unwrap().to_string();
+            let dataset_path = parsed_args.arg_flags.get("--dataset").unwrap().to_string();
             let dropout = parsed_args.arg_flags.get("--dropout").unwrap().parse::<f32>().unwrap();
             let steps = parsed_args.arg_flags.get("--steps").unwrap().parse::<usize>().unwrap();
             let reset_optimizer = parsed_args.get_flag(0).is_some();
 
             let bytes = read_bytes(&model_path)?;
-            let model: Model = bincode::deserialize(&bytes).unwrap();
+            let mut model: Model = bincode::deserialize(&bytes).unwrap();
+
+            if reset_optimizer {
+                model.logs.push(Log::reset_optimizer());
+            }
+
             let Hyperparameters {
                 num_tokens,
+                vocab_size,
                 embedding_degree,
                 num_layers,
                 num_heads,
+                head_size,
             } = model.hyperparameters;
-            let head_size = embedding_degree / num_heads;
 
             let mut rng = rand::thread_rng();
 
-            let dataset_char = read_string(&dataset)?;
+            let dataset = read_string(&dataset_path)?;
+            model.logs.push(Log::train_session(dropout, &dataset_path, &dataset));
+
             let tokenizer = tokenizers.get_mut(&model.tokenizer).unwrap();
 
             if tokenizer.has_to_load() {
@@ -294,9 +315,8 @@ fn run() -> Result<(), Error> {
             }
 
             let ts = model.training_state;
-            let dataset = tokenizer.tokenize(&dataset_char);
+            let dataset = tokenizer.tokenize(&dataset);
 
-            let vocab_size = tokenizer.vocab_size();
             let mut gpt = GPT::new(
                 &mut rng,
                 graph,
@@ -308,6 +328,7 @@ fn run() -> Result<(), Error> {
                 num_heads,
                 head_size,
                 dropout,
+                model.logs.clone(),
             )?;
 
             println!("Successfully loaded a model with {} parameters", gpt.num_params());
@@ -369,11 +390,14 @@ fn run() -> Result<(), Error> {
                     tokenizer_data: tokenizer.dump_json().unwrap(),
                     hyperparameters: Hyperparameters {
                         num_tokens,
+                        vocab_size,
                         embedding_degree,
                         num_layers,
                         num_heads,
+                        head_size,
                     },
                     training_state,
+                    logs: gpt.logs.clone(),
                 };
                 let bytes = bincode::serialize(&model).unwrap();
                 write_bytes(
@@ -466,18 +490,40 @@ fn run() -> Result<(), Error> {
             let bytes = read_bytes(&model_path)?;
             let model: Model = bincode::deserialize(&bytes).unwrap();
             let Hyperparameters {
+                num_tokens,
+                vocab_size,
                 embedding_degree,
+                num_layers,
                 num_heads,
-                ..
+                head_size,
             } = model.hyperparameters;
-            let head_size = embedding_degree / num_heads;
+            let mut rng = rand::thread_rng();
             let tokenizer = tokenizers.get_mut(&model.tokenizer).unwrap();
 
             if tokenizer.has_to_load() {
                 tokenizer.load_from_json(&model.tokenizer_data)?;
             }
 
-            println!("{:?}", model.hyperparameters);
+            let gpt = GPT::new(
+                &mut rng,
+                graph,
+                is_gpu.then(|| batch_size), // Pre-allocate batches only when using GPUs
+                vocab_size,
+                embedding_degree,
+                num_tokens,
+                num_layers,
+                num_heads,
+                head_size,
+                0.0,  // dropout
+                vec![],  // logs
+            )?;
+
+            let mut info = ModelInfo {
+                hyperparameters: model.hyperparameters,
+                num_params: gpt.num_params(),
+                logs: model.logs.clone(),
+                tokens: vec![],
+            };
 
             let embeddings = model.training_state.tensors.get("token_embedding").unwrap();
             let token_shape = embeddings.shape();
@@ -485,28 +531,29 @@ fn run() -> Result<(), Error> {
             let blob = embeddings.blob();
 
             for token_i in 0..token_shape[0] {
-                println!("{token_i} ({:?})", tokenizer.untokenize(&[token_i]));
-
+                let mut heads = vec![];
                 let token_embedding = &blob[(token_i * embedding_degree)..(token_i * embedding_degree + embedding_degree)];
 
                 for i in 0..num_heads {
                     let curr_head = &token_embedding[(i * head_size)..(i * head_size + head_size)];
-                    let rendered = format!(
-                        "[{}]",
-                        // If the numbers are too small, it's less readable. So I multiply them by `embedding_degree`.
-                        curr_head.iter().map(|f| format!("{:.3}", *f * embedding_degree as f32)).collect::<Vec<_>>().join(", "),
-                    );
-
-                    println!("    head {i}: {rendered}");
+                    let rendered = curr_head.iter().map(|n| f2s(*n)).collect::<Vec<_>>().join("");
+                    heads.push(rendered);
                 }
+
+                info.tokens.push(TokenInfo {
+                    index: token_i,
+                    string: tokenizer.untokenize(&[token_i]),
+                    heads,
+                });
             }
 
+            println!("{}", serde_json::to_string_pretty(&info).unwrap());
             Ok(())
         },
-        Some("extend-layer") => {
+        Some("insert-layer") => {
             let parsed_args = ArgParser::new()
                 .arg_flag_with_default("--input", "model.dat", ArgType::Path)
-                .arg_flag_with_default("--output", "extended.dat", ArgType::Path)
+                .arg_flag_with_default("--output", "inserted.dat", ArgType::Path)
                 .arg_flag_with_default("--insert-at", "1", ArgType::IntegerBetween { min: Some(0), max: None })
                 .args(ArgType::Path, ArgCount::None)
                 .parse(&args, 2)?;
@@ -517,23 +564,17 @@ fn run() -> Result<(), Error> {
 
             let bytes = read_bytes(&input_path)?;
             let mut model: Model = bincode::deserialize(&bytes).unwrap();
-            let tokenizer = tokenizers.get_mut(&model.tokenizer).unwrap();
-
-            if tokenizer.has_to_load() {
-                tokenizer.load_from_json(&model.tokenizer_data)?;
-            }
-
-            let vocab_size = tokenizer.vocab_size();
             let mut rng = rand::thread_rng();
 
             model.hyperparameters.num_layers += 1;
             let Hyperparameters {
                 num_tokens,
+                vocab_size,
                 embedding_degree,
                 num_layers,
                 num_heads,
+                head_size,
             } = model.hyperparameters;
-            let head_size = embedding_degree / num_heads;
 
             // It has to be trained again from scratch.
             // But it would converge much faster... I hope!
@@ -590,10 +631,15 @@ fn run() -> Result<(), Error> {
             }
 
             assert_eq!(model.training_state.tensors.len(), 0);
+            model.logs.push(Log::insert_layer(insert_at));
+            model.logs.push(Log::reset_optimizer());
 
             // we're NOT setting the parameters of the new layer
             // instead, we'll instantiate an empty GPT and write the new training
             // state to the empty GPT.
+            //
+            // 2025-07-14: It seems like the new layer is messing up the entire model.
+            //             How about cloning an existing layer?
             let bytes = bincode::serialize(&model)?;
             write_bytes(
                 &output_path,
@@ -612,6 +658,7 @@ fn run() -> Result<(), Error> {
                 num_heads,
                 head_size,
                 0.0,  // dropout
+                vec![],  // logs
             )?;
             gpt.sync()?;
             gpt.set_training_state(model.training_state.clone(), false)?;

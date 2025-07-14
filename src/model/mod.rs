@@ -1,9 +1,11 @@
-// I have created another file because I don't want to edit `src/gpt.rs`.
-// I'm not gonna edit original files except `lib.rs`, `main.rs` and `tokenizer/*`
-// so that it's easier to apply diffs from another forks.
-
 use crate::gpt::TrainingState;
 use serde::{Deserialize, Serialize};
+
+mod info;
+mod log;
+
+pub use info::{ModelInfo, TokenInfo, f2s, s2f};
+pub use log::Log;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Model {
@@ -17,13 +19,18 @@ pub struct Model {
     pub tokenizer_data: String,
     pub hyperparameters: Hyperparameters,
     pub training_state: TrainingState,
+    pub logs: Vec<Log>,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Hyperparameters {
     // It's like a max-context-size
     pub num_tokens: usize,
+    pub vocab_size: usize,
     pub embedding_degree: usize,
     pub num_layers: usize,
+
+    // head_size * num_heads == embedding_degree
     pub num_heads: usize,
+    pub head_size: usize,
 }

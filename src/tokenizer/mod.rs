@@ -1,5 +1,4 @@
 use crate::error::Error;
-use serde_json::Value;
 
 mod bpe;
 pub use bpe::*;
