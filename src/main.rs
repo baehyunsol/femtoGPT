@@ -146,7 +146,12 @@ fn run() -> Result<(), Error> {
                 "ascii" => Tokenizer::ascii(),
                 "bpe" => {
                     let data = read_string(&tokenizer_data)?;
-                    Tokenizer::from_inner(serde_json::from_str(&data)?)
+                    let data: serde_json::Value = serde_json::from_str::<>()?;
+
+                    match serde_json::from_value::<Vec<String>>(data.clone()) {
+                        Ok(tokens) => Tokenizer::from_tokens(tokens),
+                        Err(_) => Tokenizer::from_inner(serde_json::from_value(data)?),
+                    }
                 },
                 t => {
                     panic!("{t:?} is not a valid tokenizer.");

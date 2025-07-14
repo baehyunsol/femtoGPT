@@ -9,7 +9,7 @@ use ragit_fs::{
     write_string,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TokenizerInner {
@@ -32,6 +32,27 @@ impl TokenizerInner {
             unit: Unit::Char,
             unk: 0,
             tokens,
+        };
+        result.compact();
+        result
+    }
+
+    pub fn from_tokens(tokens: Vec<String>) -> Self {
+        // dedup
+        let tokens = tokens.into_iter().collect::<HashSet<_>>();
+        let mut result = HashMap::new();
+
+        // TODO: What if there's already this token?
+        result.insert(0, b"<unk>".to_vec());
+
+        for (i, t) in tokens.into_iter().enumerate() {
+            result.insert(i + 1, t.as_bytes().to_vec());
+        }
+
+        let mut result = TokenizerInner {
+            unit: Unit::Char,
+            unk: 0,
+            tokens: result,
         };
         result.compact();
         result

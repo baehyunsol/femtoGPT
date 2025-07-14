@@ -41,4 +41,9 @@ impl Tokenizer {
             state_machine,
         }
     }
+
+    pub fn from_tokens(tokens: Vec<String>) -> Self {
+        let inner = TokenizerInner::from_tokens(tokens);
+        Self::from_inner(inner)
+    }
 }
