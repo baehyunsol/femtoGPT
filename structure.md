@@ -20,11 +20,11 @@ struct Model {
     // but it seems like `bincode` does not
     // support the type.
     tokenizer_data: String,
-    hyper_parameters: HyperParameters,
+    hyperparameters: Hyperparameters,
     training_state: TrainingState,
 }
 
-struct HyperParameters {
+struct Hyperparameters {
     // It's like a max-context-size
     num_tokens: usize,
     embedding_degree: usize,

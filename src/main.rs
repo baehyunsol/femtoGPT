@@ -1,6 +1,6 @@
 use femto_gpt::error::Error;
 use femto_gpt::gpt::GPT;
-use femto_gpt::model::{Model, HyperParameters};
+use femto_gpt::model::{Model, Hyperparameters};
 use femto_gpt::optimizer::AdamW;
 use femto_gpt::tensor::TensorOps;
 use femto_gpt::tokenizer::{
@@ -169,7 +169,7 @@ fn run() -> Result<(), Error> {
             let model = Model {
                 tokenizer: tokenizer.name(),
                 tokenizer_data: tokenizer.dump_json()?,
-                hyper_parameters: HyperParameters {
+                hyperparameters: Hyperparameters {
                     num_tokens,
                     embedding_degree,
                     num_layers,
@@ -202,12 +202,12 @@ fn run() -> Result<(), Error> {
 
             let bytes = read_bytes(&model_path)?;
             let model: Model = bincode::deserialize(&bytes)?;
-            let HyperParameters {
+            let Hyperparameters {
                 num_tokens,
                 embedding_degree,
                 num_layers,
                 num_heads,
-            } = model.hyper_parameters;
+            } = model.hyperparameters;
             let head_size = embedding_degree / num_heads;
 
             let mut rng = rand::thread_rng();
@@ -274,12 +274,12 @@ fn run() -> Result<(), Error> {
 
             let bytes = read_bytes(&model_path)?;
             let model: Model = bincode::deserialize(&bytes).unwrap();
-            let HyperParameters {
+            let Hyperparameters {
                 num_tokens,
                 embedding_degree,
                 num_layers,
                 num_heads,
-            } = model.hyper_parameters;
+            } = model.hyperparameters;
             let head_size = embedding_degree / num_heads;
 
             let mut rng = rand::thread_rng();
@@ -365,7 +365,7 @@ fn run() -> Result<(), Error> {
                 let model = Model {
                     tokenizer: tokenizer.name(),
                     tokenizer_data: tokenizer.dump_json().unwrap(),
-                    hyper_parameters: HyperParameters {
+                    hyperparameters: Hyperparameters {
                         num_tokens,
                         embedding_degree,
                         num_layers,
@@ -463,11 +463,11 @@ fn run() -> Result<(), Error> {
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
             let bytes = read_bytes(&model_path)?;
             let model: Model = bincode::deserialize(&bytes).unwrap();
-            let HyperParameters {
+            let Hyperparameters {
                 embedding_degree,
                 num_heads,
                 ..
-            } = model.hyper_parameters;
+            } = model.hyperparameters;
             let head_size = embedding_degree / num_heads;
             let tokenizer = tokenizers.get_mut(&model.tokenizer).unwrap();
 
@@ -475,7 +475,7 @@ fn run() -> Result<(), Error> {
                 tokenizer.load_from_json(&model.tokenizer_data)?;
             }
 
-            println!("{:?}", model.hyper_parameters);
+            println!("{:?}", model.hyperparameters);
 
             let embeddings = model.training_state.tensors.get("token_embedding").unwrap();
             let token_shape = embeddings.shape();
@@ -524,13 +524,13 @@ fn run() -> Result<(), Error> {
             let vocab_size = tokenizer.vocab_size();
             let mut rng = rand::thread_rng();
 
-            model.hyper_parameters.num_layers += 1;
-            let HyperParameters {
+            model.hyperparameters.num_layers += 1;
+            let Hyperparameters {
                 num_tokens,
                 embedding_degree,
                 num_layers,
                 num_heads,
-            } = model.hyper_parameters;
+            } = model.hyperparameters;
             let head_size = embedding_degree / num_heads;
 
             // It has to be trained again from scratch.

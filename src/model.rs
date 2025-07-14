@@ -15,12 +15,12 @@ pub struct Model {
     // but it seems like `bincode` does not
     // support the type.
     pub tokenizer_data: String,
-    pub hyper_parameters: HyperParameters,
+    pub hyperparameters: Hyperparameters,
     pub training_state: TrainingState,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
-pub struct HyperParameters {
+pub struct Hyperparameters {
     // It's like a max-context-size
     pub num_tokens: usize,
     pub embedding_degree: usize,
