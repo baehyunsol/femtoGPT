@@ -5,7 +5,7 @@ mod info;
 mod log;
 
 pub use info::{ModelInfo, TokenInfo, f2s, s2f};
-pub use log::Log;
+pub use log::{Log, LogKind};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Model {
@@ -22,7 +22,7 @@ pub struct Model {
     pub logs: Vec<Log>,
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Serialize, PartialEq)]
 pub struct Hyperparameters {
     // It's like a max-context-size
     pub num_tokens: usize,

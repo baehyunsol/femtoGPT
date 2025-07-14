@@ -3,6 +3,7 @@ use femto_gpt::gpt::GPT;
 use femto_gpt::model::{
     Hyperparameters,
     Log,
+    LogKind,
     Model,
     ModelInfo,
     TokenInfo,
@@ -526,11 +527,12 @@ fn run() -> Result<(), Error> {
             };
 
             let embeddings = model.training_state.tensors.get("token_embedding").unwrap();
-            let token_shape = embeddings.shape();
-            let embedding_degree = token_shape[1];
+            let embedding_shape = embeddings.shape();
+            assert_eq!(embedding_shape, [vocab_size, embedding_degree]);
+
             let blob = embeddings.blob();
 
-            for token_i in 0..token_shape[0] {
+            for token_i in 0..vocab_size {
                 let mut heads = vec![];
                 let token_embedding = &blob[(token_i * embedding_degree)..(token_i * embedding_degree + embedding_degree)];
 
@@ -548,6 +550,129 @@ fn run() -> Result<(), Error> {
             }
 
             println!("{}", serde_json::to_string_pretty(&info).unwrap());
+            Ok(())
+        },
+        Some("compare") => {
+            let parsed_args = ArgParser::new()
+                .args(ArgType::Path, ArgCount::Exact(2))
+                .parse(&args, 2)?;
+
+            let model_paths = parsed_args.get_args_exact(2)?;
+            let model1_path = model_paths[0].to_string();
+            let model2_path = model_paths[1].to_string();
+            let bytes = read_bytes(&model1_path)?;
+            let model1: Model = bincode::deserialize(&bytes).unwrap();
+            let bytes = read_bytes(&model2_path)?;
+            let model2: Model = bincode::deserialize(&bytes).unwrap();
+            let tokenizer = tokenizers.get_mut(&model1.tokenizer).unwrap();
+
+            if tokenizer.has_to_load() {
+                tokenizer.load_from_json(&model1.tokenizer_data)?;
+            }
+
+            let mut same_until = model1.logs.len().min(model2.logs.len());
+            let mut same_train_step = 0;
+            let mut model1_train_step = 0;
+            let mut model2_train_step = 0;
+
+            for i in 0..(model1.logs.len().min(model2.logs.len())) {
+                if model1.logs[i].id != model2.logs[i].id {
+                    if i == 0 {
+                        panic!("Cannot compare 2 different models!");
+                    }
+
+                    same_until = i - 1;
+                    break;
+                }
+
+                if let LogKind::TrainStep { .. } = &model1.logs[i].kind {
+                    same_train_step += 1;
+                }
+            }
+
+            for i in same_until..model1.logs.len() {
+                if let LogKind::TrainStep { .. } = &model1.logs[i].kind {
+                    model1_train_step += 1;
+                }
+            }
+
+            for i in same_until..model2.logs.len() {
+                if let LogKind::TrainStep { .. } = &model2.logs[i].kind {
+                    model2_train_step += 1;
+                }
+            }
+
+            match (model1_train_step, model2_train_step) {
+                (0, 0) => {
+                    println!("{model1_path} and {model2_path} have gone through the same training session. There's nothing to compare.");
+                },
+                (0, n) => {
+                    println!("{model1_path} is parent of {model2_path}.");
+                    println!("{model2_path} is {n}-steps further trained version of {model1_path}");
+                },
+                (m, 0) => {
+                    println!("{model2_path} is parent of {model1_path}.");
+                    println!("{model1_path} is {m}-steps further trained version of {model2_path}");
+                },
+                (m, n) => {
+                    println!("{model1_path} and {model2_path} have the same parent.");
+                    println!("{model1_path} is {m}-steps further trained version of the parent.");
+                    println!("{model2_path} is {n}-steps further trained version of the parent.");
+                },
+            }
+
+            if model1.hyperparameters != model2.hyperparameters {
+                panic!("TODO: comparing 2 models with different hyperparameters.");
+            }
+
+            let mut cosine_by_key = vec![];
+
+            for key in model1.training_state.tensors.keys() {
+                if key == "token_embedding" {
+                    continue;
+                }
+
+                let s = compare_tensors(
+                    model1.training_state.tensors.get(key).unwrap().blob(),
+                    model2.training_state.tensors.get(key).unwrap().blob(),
+                );
+                cosine_by_key.push((key.to_string(), s));
+            }
+
+            cosine_by_key.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
+
+            for (key, cosine) in &cosine_by_key[..10] {
+                println!("key: {key}, cosine: {cosine:.4}");
+            }
+
+            let embeddings1 = model1.training_state.tensors.get("token_embedding").unwrap();
+            let embeddings2 = model2.training_state.tensors.get("token_embedding").unwrap();
+            let vocab_size = model1.hyperparameters.vocab_size;
+            let embedding_degree = model1.hyperparameters.embedding_degree;
+            let head_size = model1.hyperparameters.head_size;
+            let num_heads = model1.hyperparameters.num_heads;
+
+            let blob1 = embeddings1.blob();
+            let blob2 = embeddings2.blob();
+            let mut cosine_by_token = vec![];
+
+            for token_i in 0..vocab_size {
+                let token_embedding1 = &blob1[(token_i * embedding_degree)..(token_i * embedding_degree + embedding_degree)];
+                let token_embedding2 = &blob2[(token_i * embedding_degree)..(token_i * embedding_degree + embedding_degree)];
+
+                for i in 0..num_heads {
+                    let curr_head1 = &token_embedding1[(i * head_size)..(i * head_size + head_size)];
+                    let curr_head2 = &token_embedding2[(i * head_size)..(i * head_size + head_size)];
+                    cosine_by_token.push((token_i, tokenizer.untokenize(&[token_i]), i, compare_tensors(&curr_head1, &curr_head2)));
+                }
+            }
+
+            cosine_by_token.sort_by(|(_, _, _, a), (_, _, _, b)| a.partial_cmp(b).unwrap());
+
+            for (token_i, token, head_i, cosine) in &cosine_by_token[..10] {
+                println!("token_index: {token_i}, token: {token:?}, head: {head_i}, cosine: {cosine:.4}");
+            }
+
             Ok(())
         },
         Some("insert-layer") => {
@@ -711,4 +836,20 @@ fn get_corpus(dir: &str, size_limit: u64) -> Result<Vec<u8>, Error> {
     }
 
     Ok(buffer)
+}
+
+fn compare_tensors(t1: &[f32], t2: &[f32]) -> f64 {
+    assert_eq!(t1.len(), t2.len());
+
+    let mut inner_product = 0.0f64;
+    let mut t1_sqr_sum = 0.0f64;
+    let mut t2_sqr_sum = 0.0f64;
+
+    for i in 0..t1.len() {
+        inner_product += t1[i] as f64 * t2[i] as f64;
+        t1_sqr_sum += t1[i] as f64 * t1[i] as f64;
+        t2_sqr_sum += t2[i] as f64 * t2[i] as f64;
+    }
+
+    inner_product / t1_sqr_sum.sqrt() / t2_sqr_sum.sqrt()
 }
