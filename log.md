@@ -456,3 +456,10 @@ Evaluation
 | 9      |  7       |  0         | 100.0%         |
 
 It's much smaller than #20 ~ #26, but does better than them. The lesson is that I have to wait longer until the model converges.
+
+# 28. Plan for training a Rust coder
+
+1. I need a larger dataset. Let's expand #14's dataset.
+2. I need a smaller dictionary. I have to make one manually, instead of training it.
+  - It would be ascii chars + Rust keywords + Rust operators (multi-characters only)
+3. I'll go with (emb 144, num layers 8, num heads 6)
