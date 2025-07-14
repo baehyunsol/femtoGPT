@@ -263,6 +263,7 @@ fn run() -> Result<(), Error> {
                 .arg_flag_with_default("--dataset", "dataset.txt", ArgType::Path)
                 // TODO: `ArgType::FloatBetween`
                 .arg_flag_with_default("--dropout", "0", ArgType::String)
+                .arg_flag_with_default("--steps", "100000", ArgType::IntegerBetween { min: Some(10), max: None })
                 .optional_flag(&["--reset-optimizer"])
                 .args(ArgType::Path, ArgCount::None)
                 .parse(&args, 2)?;
@@ -270,6 +271,7 @@ fn run() -> Result<(), Error> {
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
             let dataset = parsed_args.arg_flags.get("--dataset").unwrap().to_string();
             let dropout = parsed_args.arg_flags.get("--dropout").unwrap().parse::<f32>().unwrap();
+            let steps = parsed_args.arg_flags.get("--steps").unwrap().parse::<usize>().unwrap();
             let reset_optimizer = parsed_args.get_flag(0).is_some();
 
             let bytes = read_bytes(&model_path)?;
@@ -387,7 +389,7 @@ fn run() -> Result<(), Error> {
             #[cfg(not(feature = "gpu"))]
             gpt.train_cpu(
                 &dataset,
-                100000,
+                steps,
                 batch_size,
                 None, // or Some(n), limit backward process to last n computations
                 &AdamW::new(),
@@ -398,7 +400,7 @@ fn run() -> Result<(), Error> {
             #[cfg(feature = "gpu")]
             gpt.train(
                 &dataset,
-                100000,
+                steps,
                 batch_size,
                 None, // or Some(n), limit backward process to last n computations
                 &AdamW::new(),
