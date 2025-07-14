@@ -1,6 +1,6 @@
 use super::{
     TokenId,
-    Tokenizer,
+    TokenizerInner,
 };
 use std::collections::HashMap;
 
@@ -22,7 +22,7 @@ pub enum StateMachineValue {
 type Key = StateMachineKey;
 type Value = StateMachineValue;
 
-impl Tokenizer {
+impl TokenizerInner {
     /// It builds a state machine each time you call this.
     pub fn encode(&self, s: &[u8]) -> Vec<TokenId> {
         let state_machine = self.build_state_machine();
@@ -30,7 +30,7 @@ impl Tokenizer {
     }
 
     /// If you've already built a state machine, this function is much faster than `encode`.
-    /// You can build one with `Tokenizer::build_state_machine()`.
+    /// You can build one with `TokenizerInner::build_state_machine()`.
     pub fn encode_with_state_machine(&self, s: &[u8], state_machine: &StateMachine) -> Vec<TokenId> {
         let mut cursor = 0;
         let mut result = vec![];

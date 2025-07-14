@@ -1,23 +1,44 @@
-use crate::error::Error;
+mod char_count;
+mod config;
+mod encode;
+mod inner;
 
-mod bpe;
-pub use bpe::*;
+use encode::StateMachine;
 
-mod byte;
-pub use byte::*;
+pub use char_count::{CharCount, count_chars};
+pub use config::BpeConfig;
+pub use inner::TokenizerInner;
 
-pub trait Tokenizer {
-    fn name(&self) -> String;
-    fn vocab_size(&self) -> usize;
-    fn tokenize(&self, string: &str) -> Vec<usize>;
-    fn untokenize(&self, tokens: &[usize]) -> String;
-    fn has_to_load(&self) -> bool {
-        false
+pub type TokenId = usize;
+
+pub struct Tokenizer {
+    pub inner: TokenizerInner,
+    state_machine: StateMachine,
+}
+
+impl Tokenizer {
+    pub fn ascii() -> Self {
+        Self::from_inner(TokenizerInner::ascii())
     }
-    fn load_from_json(&mut self, _data: &str) -> Result<(), Error> {
-        Ok(())
+
+    pub fn vocab_size(&self) -> usize {
+        self.inner.tokens.len()
     }
-    fn dump_json(&self) -> Result<String, Error> {
-        Ok(String::new())
+
+    pub fn tokenize(&self, string: &str) -> Vec<usize> {
+        self.inner.encode_with_state_machine(string.as_bytes(), &self.state_machine)
+    }
+
+    pub fn untokenize(&self, tokens: &[usize]) -> String {
+        self.inner.decode(tokens)
+    }
+
+    pub fn from_inner(inner: TokenizerInner) -> Self {
+        let state_machine = inner.build_state_machine();
+
+        Tokenizer {
+            inner,
+            state_machine,
+        }
     }
 }

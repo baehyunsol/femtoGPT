@@ -1,4 +1,5 @@
 use crate::gpt::TrainingState;
+use crate::tokenizer::TokenizerInner;
 use serde::{Deserialize, Serialize};
 
 mod info;
@@ -9,14 +10,7 @@ pub use log::{Log, LogKind};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Model {
-    // "byte" | "bpe"
-    pub tokenizer: String,
-
-    // some tokenizers require an extra data
-    // I want it to be `serde_json::Value`,
-    // but it seems like `bincode` does not
-    // support the type.
-    pub tokenizer_data: String,
+    pub tokenizer: TokenizerInner,
     pub hyperparameters: Hyperparameters,
     pub training_state: TrainingState,
     pub logs: Vec<Log>,

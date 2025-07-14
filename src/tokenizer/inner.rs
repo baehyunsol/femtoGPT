@@ -1,4 +1,4 @@
-use super::{BpeConfig, CharCount};
+use super::{BpeConfig, CharCount, TokenId};
 use super::config::Unit;
 use crate::error::Error;
 use ragit_fs::{
@@ -11,27 +11,30 @@ use ragit_fs::{
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-mod encode;
-
-pub use encode::StateMachine;
-pub type TokenId = usize;
-
-#[derive(Deserialize, Serialize)]
-pub struct Tokenizer {
+#[derive(Clone, Debug, Deserialize, Serialize)]
+pub struct TokenizerInner {
     unit: Unit,
     // `unk` is contained in `tokens`
     pub unk: TokenId,
     pub tokens: HashMap<TokenId, Vec<u8>>,
 }
 
-impl Tokenizer {
-    /// It's unusable. You have to call `.load(value)` to initialize it.
-    pub fn dummy() -> Self {
-        Tokenizer {
+impl TokenizerInner {
+    pub fn ascii() -> Self {
+        let mut tokens = HashMap::new();
+        tokens.insert(0, b"<unk>".to_vec());
+
+        for c in (b' '..=b'~').chain(b'\t'..=b'\r') {
+            tokens.insert(c as TokenId, vec![c]);
+        }
+
+        let mut result = TokenizerInner {
             unit: Unit::Char,
             unk: 0,
-            tokens: HashMap::new(),
-        }
+            tokens,
+        };
+        result.compact();
+        result
     }
 
     /// You have to call this function if you want to use it with femtoGPT.
@@ -99,7 +102,7 @@ impl Tokenizer {
             tokens.insert(token_id, bytes);
         }
 
-        Tokenizer {
+        TokenizerInner {
             unit: config.unit,
             unk: unk_id.unwrap(),
             tokens,

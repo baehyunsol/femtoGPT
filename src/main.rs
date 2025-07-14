@@ -13,9 +13,7 @@ use femto_gpt::optimizer::AdamW;
 use femto_gpt::tensor::TensorOps;
 use femto_gpt::tokenizer::{
     BpeConfig,
-    BpeTokenizer,
-    BpeTokenizerInner,
-    ByteTokenizer,
+    TokenizerInner,
     Tokenizer,
     count_chars,
 };
@@ -67,11 +65,6 @@ fn run() -> Result<(), Error> {
 
     let batch_size = 32;
 
-    let mut tokenizers: HashMap<String, Box<dyn Tokenizer>> = vec![
-        ("byte", Box::new(ByteTokenizer) as Box<dyn Tokenizer>),
-        ("bpe", Box::new(BpeTokenizer::new())),
-    ].into_iter().map(|(name, tokenizer)| (name.to_string(), tokenizer)).collect();
-
     let args = std::env::args().collect::<Vec<_>>();
 
     match args.get(1).map(|arg| arg.as_str()) {
@@ -79,7 +72,7 @@ fn run() -> Result<(), Error> {
             let parsed_args = ArgParser::new()
                 .optional_flag(&["--interactive"])
                 .arg_flag_with_default("--model", "model.dat", ArgType::Path)
-                .arg_flag_with_default("--tokenizer", "byte", ArgType::String)
+                .arg_flag_with_default("--tokenizer", "ascii", ArgType::String)
                 .arg_flag_with_default("--tokenizer-data", "tokenizer.json", ArgType::Path)
                 .arg_flag_with_default("--num-tokens", "80", ArgType::IntegerBetween { min: Some(0), max: None })
                 .arg_flag_with_default("--embedding-degree", "80", ArgType::IntegerBetween { min: Some(0), max: None })
@@ -100,7 +93,7 @@ fn run() -> Result<(), Error> {
             if parsed_args.get_flag(0).is_some() {
                 let mut s = String::new();
 
-                println!("Select tokenizer: byte or bpe (default: byte)");
+                println!("Select tokenizer: ascii or bpe (default: ascii)");
                 print!(">>> ");
                 std::io::stdout().flush()?;
                 std::io::stdin().read_line(&mut s)?;
@@ -146,15 +139,19 @@ fn run() -> Result<(), Error> {
 
             let head_size = embedding_degree / num_heads;
             assert_eq!(head_size * num_heads, embedding_degree);
-            assert!(tokenizers.get(&tokenizer).is_some());
 
             let mut rng = rand::thread_rng();
-            let tokenizer = tokenizers.get_mut(&tokenizer).unwrap();
 
-            if tokenizer.has_to_load() {
-                let data = read_string(&tokenizer_data)?;
-                tokenizer.load_from_json(&data)?;
-            }
+            let tokenizer = match tokenizer.as_str() {
+                "ascii" => Tokenizer::ascii(),
+                "bpe" => {
+                    let data = read_string(&tokenizer_data)?;
+                    Tokenizer::from_inner(serde_json::from_str(&data)?)
+                },
+                t => {
+                    panic!("{t:?} is not a valid tokenizer.");
+                },
+            };
 
             let vocab_size = tokenizer.vocab_size();
 
@@ -184,8 +181,7 @@ fn run() -> Result<(), Error> {
                 head_size,
             };
             let model = Model {
-                tokenizer: tokenizer.name(),
-                tokenizer_data: tokenizer.dump_json()?,
+                tokenizer: tokenizer.inner.clone(),
                 hyperparameters,
                 training_state,
                 logs: vec![Log::init(hyperparameters)],
@@ -225,11 +221,7 @@ fn run() -> Result<(), Error> {
             } = model.hyperparameters;
 
             let mut rng = rand::thread_rng();
-            let tokenizer = tokenizers.get_mut(&model.tokenizer).unwrap();
-
-            if tokenizer.has_to_load() {
-                tokenizer.load_from_json(&model.tokenizer_data)?;
-            }
+            let tokenizer = Tokenizer::from_inner(model.tokenizer.clone());
 
             let ts = model.training_state;
 
@@ -308,12 +300,7 @@ fn run() -> Result<(), Error> {
 
             let dataset = read_string(&dataset_path)?;
             model.logs.push(Log::train_session(dropout, &dataset_path, &dataset));
-
-            let tokenizer = tokenizers.get_mut(&model.tokenizer).unwrap();
-
-            if tokenizer.has_to_load() {
-                tokenizer.load_from_json(&model.tokenizer_data)?;
-            }
+            let tokenizer = Tokenizer::from_inner(model.tokenizer.clone());
 
             let ts = model.training_state;
             let dataset = tokenizer.tokenize(&dataset);
@@ -387,8 +374,7 @@ fn run() -> Result<(), Error> {
                 gpt.sync().unwrap();
                 let training_state = gpt.get_training_state().unwrap();
                 let model = Model {
-                    tokenizer: tokenizer.name(),
-                    tokenizer_data: tokenizer.dump_json().unwrap(),
+                    tokenizer: tokenizer.inner.clone(),
                     hyperparameters: Hyperparameters {
                         num_tokens,
                         vocab_size,
@@ -452,7 +438,7 @@ fn run() -> Result<(), Error> {
             let mut config = BpeConfig::default();
             config.vocab_size = vocab_size;
             let char_count = count_chars(&dataset, &config)?;
-            let mut tokenizer = BpeTokenizerInner::from_char_count(&char_count, &config);
+            let mut tokenizer = TokenizerInner::from_char_count(&char_count, &config);
 
             let max_corpus_size = 1 << 20;
 
@@ -499,11 +485,7 @@ fn run() -> Result<(), Error> {
                 head_size,
             } = model.hyperparameters;
             let mut rng = rand::thread_rng();
-            let tokenizer = tokenizers.get_mut(&model.tokenizer).unwrap();
-
-            if tokenizer.has_to_load() {
-                tokenizer.load_from_json(&model.tokenizer_data)?;
-            }
+            let tokenizer = Tokenizer::from_inner(model.tokenizer.clone());
 
             let gpt = GPT::new(
                 &mut rng,
@@ -564,11 +546,7 @@ fn run() -> Result<(), Error> {
             let model1: Model = bincode::deserialize(&bytes).unwrap();
             let bytes = read_bytes(&model2_path)?;
             let model2: Model = bincode::deserialize(&bytes).unwrap();
-            let tokenizer = tokenizers.get_mut(&model1.tokenizer).unwrap();
-
-            if tokenizer.has_to_load() {
-                tokenizer.load_from_json(&model1.tokenizer_data)?;
-            }
+            let tokenizer = Tokenizer::from_inner(model1.tokenizer.clone());
 
             let mut same_until = model1.logs.len().min(model2.logs.len());
             let mut same_train_step = 0;
