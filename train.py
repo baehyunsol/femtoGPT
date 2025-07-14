@@ -73,12 +73,12 @@ if __name__ == "__main__":
     if command == "small":
         train(
             init_models=5,
-            train_steps=80,
+            train_steps=200,
             select_models=2,
             dup_count=[3, 2],
 
-            embedding_degree=36,
-            num_layers=6,
+            embedding_degree=80,
+            num_layers=4,
             num_heads=4,
         )
 
