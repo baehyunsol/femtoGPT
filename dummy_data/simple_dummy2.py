@@ -22,7 +22,7 @@ def dump():
     lines = []
     previous_data = None
 
-    for _ in range(20000):
+    for _ in range(50000):
         data = "".join([chr(ord("a") + ri(0, 5)) for _ in range(ri(4, 8))])
         action = ri(0, 9)
 
@@ -72,7 +72,7 @@ def eval():
             samples.append((
                 "\n".join(previous_lines + [line[:-len(answer) + 1]]),
                 action,
-                line,
+                line + "\n",
             ))
 
         previous_lines.append(line)
@@ -105,7 +105,7 @@ def eval():
             print("incorrect!")
             incorrect[action] = incorrect.get(action, 0) + 1
 
-    print(correct, incorrect)
+    print("correct:", correct, "incorrect:", incorrect)
 
 # eval()
 print(dump())
