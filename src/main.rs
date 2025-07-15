@@ -94,14 +94,23 @@ fn run() -> Result<(), Error> {
             if parsed_args.get_flag(0).is_some() {
                 let mut s = String::new();
 
-                println!("Select tokenizer: ascii or bpe (default: ascii)");
+                println!("Select tokenizer: ascii, char or bpe (default: ascii)");
                 print!(">>> ");
                 std::io::stdout().flush()?;
                 std::io::stdin().read_line(&mut s)?;
                 tokenizer = s.trim().to_string();
                 s = String::new();
 
-                if tokenizer == "bpe" {
+                if tokenizer == "char" {
+                    println!("Select dataset file (default: dataset.txt)");
+                    print!(">>> ");
+                    std::io::stdout().flush()?;
+                    std::io::stdin().read_line(&mut s)?;
+                    tokenizer_data = s.trim().to_string();
+                    s = String::new();
+                }
+
+                else if tokenizer == "bpe" {
                     println!("Select tokenizer data file (default: tokenizer.json)");
                     print!(">>> ");
                     std::io::stdout().flush()?;
@@ -145,6 +154,13 @@ fn run() -> Result<(), Error> {
 
             let tokenizer = match tokenizer.as_str() {
                 "ascii" => Tokenizer::ascii(),
+                "char" => {
+                    let mut config = BpeConfig::default();
+                    config.vocab_size = 2048;
+                    config.char_vocab_size = Some(2048);
+                    let char_count = count_chars(&tokenizer_data, &config)?;
+                    Tokenizer::from_inner(TokenizerInner::from_char_count(&char_count, &config))
+                },
                 "bpe" => {
                     let data = read_string(&tokenizer_data)?;
                     let data: serde_json::Value = serde_json::from_str(&data)?;
