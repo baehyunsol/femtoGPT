@@ -457,15 +457,15 @@ Evaluation
 
 It's much smaller than #20 ~ #26, but does better than them. The lesson is that I have to wait longer until the model converges.
 
-# 28. Training a Rust coder 6
+# 28. Training a Rust coder 6 (failed)
 
 - tokenizer: bpe (630 tokens)
 - embedding degree: 192, num layers: 8, num heads: 8 (3.7M parameters)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
-- step: ????, loss: ?.????, elapsed: ??m ??s (AWS EC2 m5.4xlarge: 16vCPU, 64GB RAM)
+- step: 9440 loss: 5.9775, elapsed: 11 ~ 12h (AWS EC2 m5.4xlarge: 16vCPU, 64GB RAM)
   - step 1 ~ step 39: loss 6.4
   - step 40 ~ step 90: loss 6.4 -> loss 6.0
-  - step 91 ~ 
+  - step 91 ~ step 9440: loss 6.0
 - data: see below
 
 ```sh
