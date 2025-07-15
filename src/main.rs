@@ -798,6 +798,7 @@ fn run() -> Result<(), Error> {
             assert_eq!(model.training_state.tensors.len(), 0);
             model.logs.push(Log::insert_layer(insert_at));
             model.logs.push(Log::reset_optimizer());
+            model.training_state.tensors = new_tensors;
 
             // we're NOT setting the parameters of the new layer
             // instead, we'll instantiate an empty GPT and write the new training
