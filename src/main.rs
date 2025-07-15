@@ -519,9 +519,9 @@ fn run() -> Result<(), Error> {
 
             let blob = embeddings.blob();
 
-            for token_i in 0..vocab_size {
+            for token_id in 0..vocab_size {
                 let mut heads = vec![];
-                let token_embedding = &blob[(token_i * embedding_degree)..(token_i * embedding_degree + embedding_degree)];
+                let token_embedding = &blob[(token_id * embedding_degree)..(token_id * embedding_degree + embedding_degree)];
 
                 for i in 0..num_heads {
                     let curr_head = &token_embedding[(i * head_size)..(i * head_size + head_size)];
@@ -530,8 +530,8 @@ fn run() -> Result<(), Error> {
                 }
 
                 info.tokens.push(TokenInfo {
-                    index: token_i,
-                    string: tokenizer.untokenize(&[token_i]),
+                    index: token_id,
+                    string: tokenizer.untokenize(&[token_id]),
                     heads,
                 });
             }
@@ -588,6 +588,7 @@ fn run() -> Result<(), Error> {
             match (model1_train_step, model2_train_step) {
                 (0, 0) => {
                     println!("{model1_path} and {model2_path} have gone through the same training session. There's nothing to compare.");
+                    println!("The parent has been trained for {same_train_step} steps.");
                 },
                 (0, n) => {
                     println!("{model1_path} is parent of {model2_path}.");
@@ -615,14 +616,14 @@ fn run() -> Result<(), Error> {
                     continue;
                 }
 
-                let s = compare_tensors(
+                let s = cosine(
                     model1.training_state.tensors.get(key).unwrap().blob(),
                     model2.training_state.tensors.get(key).unwrap().blob(),
                 );
                 cosine_by_key.push((key.to_string(), s));
             }
 
-            cosine_by_key.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
+            cosine_by_key.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
             for (key, cosine) in &cosine_by_key[..10] {
                 println!("key: {key}, cosine: {cosine:.4}");
@@ -639,21 +640,21 @@ fn run() -> Result<(), Error> {
             let blob2 = embeddings2.blob();
             let mut cosine_by_token = vec![];
 
-            for token_i in 0..vocab_size {
-                let token_embedding1 = &blob1[(token_i * embedding_degree)..(token_i * embedding_degree + embedding_degree)];
-                let token_embedding2 = &blob2[(token_i * embedding_degree)..(token_i * embedding_degree + embedding_degree)];
+            for token_id in 0..vocab_size {
+                let token_embedding1 = &blob1[(token_id * embedding_degree)..(token_id * embedding_degree + embedding_degree)];
+                let token_embedding2 = &blob2[(token_id * embedding_degree)..(token_id * embedding_degree + embedding_degree)];
 
                 for i in 0..num_heads {
                     let curr_head1 = &token_embedding1[(i * head_size)..(i * head_size + head_size)];
                     let curr_head2 = &token_embedding2[(i * head_size)..(i * head_size + head_size)];
-                    cosine_by_token.push((token_i, tokenizer.untokenize(&[token_i]), i, compare_tensors(&curr_head1, &curr_head2)));
+                    cosine_by_token.push((token_id, tokenizer.untokenize(&[token_id]), i, cosine(&curr_head1, &curr_head2)));
                 }
             }
 
             cosine_by_token.sort_by(|(_, _, _, a), (_, _, _, b)| a.partial_cmp(b).unwrap());
 
-            for (token_i, token, head_i, cosine) in &cosine_by_token[..10] {
-                println!("token_index: {token_i}, token: {token:?}, head: {head_i}, cosine: {cosine:.4}");
+            for (token_id, token, head_i, cosine) in &cosine_by_token[..10] {
+                println!("token_id: {token_id}, token: {token:?}, head: {head_i}, cosine: {cosine:.4}");
             }
 
             Ok(())
@@ -669,20 +670,19 @@ fn run() -> Result<(), Error> {
             let model: Model = bincode::deserialize(&bytes).unwrap();
             let tokenizer = Tokenizer::from_inner(model.tokenizer.clone());
             let Hyperparameters {
-                num_tokens,
                 vocab_size,
                 embedding_degree,
-                num_layers,
                 num_heads,
                 head_size,
+                ..
             } = model.hyperparameters;
 
             let mut by_head = vec![Vec::with_capacity(vocab_size); num_heads];
             let embeddings = model.training_state.tensors.get("token_embedding").unwrap();
             let blob = embeddings.blob();
 
-            for token_i in 0..vocab_size {
-                let token_embedding = &blob[(token_i * embedding_degree)..(token_i * embedding_degree + embedding_degree)];
+            for token_id in 0..vocab_size {
+                let token_embedding = &blob[(token_id * embedding_degree)..(token_id * embedding_degree + embedding_degree)];
 
                 for i in 0..num_heads {
                     let curr_head = &token_embedding[(i * head_size)..(i * head_size + head_size)];
@@ -695,7 +695,7 @@ fn run() -> Result<(), Error> {
 
                 for j in 0..vocab_size {
                     for k in (j + 1)..vocab_size {
-                        cosines.push((j, k, compare_tensors(&by_head[i][j], &by_head[i][k])));
+                        cosines.push((j, k, cosine(&by_head[i][j], &by_head[i][k])));
                     }
                 }
 
@@ -704,11 +704,11 @@ fn run() -> Result<(), Error> {
 
                 println!("---- Head {i} ----");
 
-                for (token_i1, token_i2, cosine) in cosines[..10].iter() {
+                for (token_id1, token_id2, cosine) in cosines[..10].iter() {
                     println!(
                         "{:?} <-> {:?}: {cosine}",
-                        tokenizer.untokenize(&[*token_i1]),
-                        tokenizer.untokenize(&[*token_i2]),
+                        tokenizer.untokenize(&[*token_id1]),
+                        tokenizer.untokenize(&[*token_id2]),
                     );
                 }
             }
@@ -879,7 +879,7 @@ fn get_corpus(dir: &str, size_limit: u64) -> Result<Vec<u8>, Error> {
     Ok(buffer)
 }
 
-fn compare_tensors(t1: &[f32], t2: &[f32]) -> f64 {
+fn cosine(t1: &[f32], t2: &[f32]) -> f64 {
     assert_eq!(t1.len(), t2.len());
 
     let mut inner_product = 0.0f64;
