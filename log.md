@@ -457,9 +457,59 @@ Evaluation
 
 It's much smaller than #20 ~ #26, but does better than them. The lesson is that I have to wait longer until the model converges.
 
-# 28. Plan for training a Rust coder
+# 28. Training a Rust coder 6
 
-1. I need a larger dataset. Let's expand #14's dataset.
-2. I need a smaller dictionary. I have to make one manually, instead of training it.
-  - It would be ascii chars + Rust keywords + Rust operators (multi-characters only)
-3. I'll go with (emb 144, num layers 8, num heads 6)
+- tokenizer: bpe (630 tokens)
+- embedding degree: 192, num layers: 8, num heads: 8 (3.7M parameters)
+- dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- step: ????, loss: ?.????, elapsed: ??m ??s (AWS EC2 m5.4xlarge: 16vCPU, 64GB RAM)
+  - step 1 ~ step 39: loss 6.4
+  - step 40 ~ step 90: loss 6.4 -> loss 6.0
+  - step 91 ~ 
+- data: see below
+
+```sh
+cat src/**/*.rs > dataset.txt
+
+git -C .. clone https://github.com/baehyunsol/ragit
+git -C ../ragit checkout e12153573
+cat ../ragit/src/**/*.rs >> dataset.txt
+
+git -C .. clone https://github.com/gleam-lang/gleam
+git -C ../gleam checkout bed57729d
+cat ../gleam/compiler-core/src/**/*.rs >> dataset.txt
+
+git -C .. clone https://github.com/seanmonstar/warp
+git -C ../warp checkout 1cbf029b1
+cat ../warp/src/**/*.rs >> dataset.txt
+
+git -C .. clone https://github.com/getzola/zola
+git -C ../zola checkout c1b105051
+cat ../zola/src/**/*.rs >> dataset.txt
+
+git -C .. clone https://github.com/jafioti/luminal
+git -C ../luminal checkout bd33460c9
+cat ../luminal/src/**/*.rs >> dataset.txt
+
+git -C .. clone https://github.com/rust-num/num-bigint
+git -C ../num-bigint checkout 575cea47d
+cat ../num-bigint/src/**/*.rs >> dataset.txt
+
+git -C .. clone https://github.com/dimforge/nalgebra
+git -C ../nalgebra checkout fa7afd5e4
+cat ../nalgebra/src/**/*.rs >> dataset.txt
+
+git -C .. clone https://github.com/bevyengine/bevy
+git -C ../bevy checkout 2bddbdfd7
+cat ../bevy/crates/bevy_core_pipeline/src/**/*.rs >> dataset.txt
+
+git -C .. clone https://github.com/rust-lang/rust
+git -C ../rust checkout 7f2065a4b
+cat ../rust/compiler/rustc_mir_transform/src/**/*.rs >> dataset.txt
+
+ls -l dataset.txt
+
+cargo run --release -- train-bpe --epoch=60 --vocab-size=600
+cargo run --release -- init --tokenizer=bpe --num-tokens=80 --embedding-degree=192 --num-layers=8 --num-heads=8
+nohup cargo run --release -- train --dropout=0.1 &
+```
