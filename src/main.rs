@@ -658,6 +658,63 @@ fn run() -> Result<(), Error> {
 
             Ok(())
         },
+        Some("cluster-tokens") => {
+            let parsed_args = ArgParser::new()
+                .arg_flag_with_default("--model", "model.dat", ArgType::Path)
+                .args(ArgType::Path, ArgCount::None)
+                .parse(&args, 2)?;
+
+            let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
+            let bytes = read_bytes(&model_path)?;
+            let model: Model = bincode::deserialize(&bytes).unwrap();
+            let tokenizer = Tokenizer::from_inner(model.tokenizer.clone());
+            let Hyperparameters {
+                num_tokens,
+                vocab_size,
+                embedding_degree,
+                num_layers,
+                num_heads,
+                head_size,
+            } = model.hyperparameters;
+
+            let mut by_head = vec![Vec::with_capacity(vocab_size); num_heads];
+            let embeddings = model.training_state.tensors.get("token_embedding").unwrap();
+            let blob = embeddings.blob();
+
+            for token_i in 0..vocab_size {
+                let token_embedding = &blob[(token_i * embedding_degree)..(token_i * embedding_degree + embedding_degree)];
+
+                for i in 0..num_heads {
+                    let curr_head = &token_embedding[(i * head_size)..(i * head_size + head_size)];
+                    by_head[i].push(curr_head.to_vec());
+                }
+            }
+
+            for i in 0..num_heads {
+                let mut cosines = Vec::with_capacity(vocab_size * vocab_size / 2);
+
+                for j in 0..vocab_size {
+                    for k in (j + 1)..vocab_size {
+                        cosines.push((j, k, compare_tensors(&by_head[i][j], &by_head[i][k])));
+                    }
+                }
+
+                // rev sort
+                cosines.sort_by(|(_, _, a), (_, _, b)| b.partial_cmp(a).unwrap());
+
+                println!("---- Head {i} ----");
+
+                for (token_i1, token_i2, cosine) in cosines[..10].iter() {
+                    println!(
+                        "{:?} <-> {:?}: {cosine}",
+                        tokenizer.untokenize(&[*token_i1]),
+                        tokenizer.untokenize(&[*token_i2]),
+                    );
+                }
+            }
+
+            Ok(())
+        },
         Some("insert-layer") => {
             let parsed_args = ArgParser::new()
                 .arg_flag_with_default("--input", "model.dat", ArgType::Path)
