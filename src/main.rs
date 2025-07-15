@@ -1,4 +1,5 @@
 use femto_gpt::error::Error;
+use femto_gpt::gguf::import_gguf;
 use femto_gpt::gpt::GPT;
 use femto_gpt::model::{
     Hyperparameters,
@@ -840,6 +841,28 @@ fn run() -> Result<(), Error> {
                 &bytes,
                 WriteMode::Atomic,
             )?;
+
+            Ok(())
+        },
+        Some("import-gpt2") => {
+            let parsed_args = ArgParser::new()
+                .arg_flag_with_default("--input", "gpt2.gguf", ArgType::Path)
+                .arg_flag_with_default("--output", "model.dat", ArgType::Path)
+                .args(ArgType::Path, ArgCount::None)
+                .parse(&args, 2)?;
+
+            let input_path = parsed_args.arg_flags.get("--input").unwrap().to_string();
+            let output_path = parsed_args.arg_flags.get("--output").unwrap().to_string();
+
+            // NOTE: It loads the entire gguf file to the memory.
+            let gguf = read_bytes(&input_path)?;
+            let gguf = import_gguf(&gguf);
+
+            // NOTE: It seems like gpt-2 and femtoGPT are not compatible.
+            //       I have to either
+            //       1. find a model that's compatible with femtoGPT
+            //       2. update femtoGPT to be compatible with gpt-2
+            //       3. give up importing gpt-2 and train my own model
 
             Ok(())
         },

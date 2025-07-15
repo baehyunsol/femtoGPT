@@ -1,5 +1,6 @@
 pub mod error;
 pub mod funcs;
+pub mod gguf;
 pub mod gpt;
 pub mod graph;
 pub mod model;
