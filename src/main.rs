@@ -146,7 +146,7 @@ fn run() -> Result<(), Error> {
                 "ascii" => Tokenizer::ascii(),
                 "bpe" => {
                     let data = read_string(&tokenizer_data)?;
-                    let data: serde_json::Value = serde_json::from_str::<>()?;
+                    let data: serde_json::Value = serde_json::from_str(&data)?;
 
                     match serde_json::from_value::<Vec<String>>(data.clone()) {
                         Ok(tokens) => Tokenizer::from_tokens(tokens),
