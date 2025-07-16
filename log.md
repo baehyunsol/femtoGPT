@@ -513,3 +513,250 @@ cargo run --release -- train-bpe --epoch=60 --vocab-size=600
 cargo run --release -- init --tokenizer=bpe --num-tokens=80 --embedding-degree=192 --num-layers=8 --num-heads=8
 nohup cargo run --release -- train --dropout=0.1 &
 ```
+
+At first, I thought it's a failure. Its loss was stuck at 6.0.
+
+I ran `compare` command on 2 checkpoints (step 1140 and step 9420), and it seems like something is happening.
+
+- `cargo run --release -- compare chk-001-step-1140.dat chk-002-step-9420.dat --limit=50`
+
+```
+chk-001-step-1140.dat is parent of chk-002-step-9420.dat.
+chk-002-step-9420.dat is 8280-steps further trained version of chk-001-step-1140.dat
+key: norm_0_bias, cosine: -0.186219
+key: proj_0_bias, cosine: -0.149568
+key: atten_norm_0_bias, cosine: 0.032173
+key: feedforward2_0_bias, cosine: 0.203454
+key: atten_norm_5_bias, cosine: 0.270509
+key: norm_1_bias, cosine: 0.309950
+key: feedforward2_5_bias, cosine: 0.374995
+key: proj_2_bias, cosine: 0.389131
+key: atten_norm_1_bias, cosine: 0.398604
+key: norm_2_bias, cosine: 0.402201
+key: feedforward1_0_bias, cosine: 0.431982
+key: proj_1_bias, cosine: 0.448739
+key: feedforward2_1_bias, cosine: 0.460932
+key: head_norm_coeff, cosine: 0.482581
+key: atten_norm_2_bias, cosine: 0.491970
+key: atten_norm_3_bias, cosine: 0.686438
+key: feedforward2_3_bias, cosine: 0.699300
+key: proj_3_bias, cosine: 0.702777
+key: feedforward1_1_bias, cosine: 0.725262
+key: norm_3_bias, cosine: 0.783604
+key: atten_norm_7_coeff, cosine: 0.787582
+key: proj_6_bias, cosine: 0.787752
+key: feedforward1_3_bias, cosine: 0.787844
+key: feedforward2_2_bias, cosine: 0.788781
+key: proj_5_bias, cosine: 0.792540
+key: norm_5_bias, cosine: 0.799880
+key: feedforward1_2_bias, cosine: 0.815701
+key: norm_4_bias, cosine: 0.817524
+key: norm_6_bias, cosine: 0.820367
+key: proj_4_bias, cosine: 0.836463
+key: atten_norm_4_bias, cosine: 0.843805
+key: feedforward2_7_weights, cosine: 0.858503
+key: proj_7_weights, cosine: 0.863350
+key: feedforward2_4_bias, cosine: 0.868288
+key: feedforward2_7_bias, cosine: 0.885023
+key: proj_7_bias, cosine: 0.890920
+key: norm_7_bias, cosine: 0.891247
+key: atten_norm_7_bias, cosine: 0.896418
+key: head_norm_bias, cosine: 0.900783
+key: atten_norm_6_bias, cosine: 0.904012
+key: feedforward1_5_bias, cosine: 0.910950
+key: head_7_7_v, cosine: 0.921637
+key: feedforward2_6_bias, cosine: 0.924358
+key: norm_6_coeff, cosine: 0.925809
+key: feedforward1_7_bias, cosine: 0.928416
+key: feedforward1_7_weights, cosine: 0.929824
+key: head_7_2_v, cosine: 0.930775
+key: head_7_1_v, cosine: 0.933730
+key: head_7_4_v, cosine: 0.943772
+key: head_7_0_v, cosine: 0.946504
+token_id: 439, token: "tex", head: 4, cosine: 0.449657
+token_id: 153, token: "er", head: 4, cosine: 0.470878
+token_id: 176, token: "<'a", head: 4, cosine: 0.494777
+token_id: 294, token: "nder", head: 4, cosine: 0.514955
+token_id: 26, token: "::", head: 4, cosine: 0.522974
+token_id: 288, token: "Expr", head: 4, cosine: 0.531286
+token_id: 68, token: "} ", head: 4, cosine: 0.534327
+token_id: 315, token: "ex", head: 4, cosine: 0.544650
+token_id: 31, token: ": S", head: 4, cosine: 0.564348
+token_id: 177, token: " ", head: 3, cosine: 0.564892
+token_id: 177, token: " ", head: 4, cosine: 0.569459
+token_id: 272, token: "from", head: 4, cosine: 0.573965
+token_id: 598, token: "_", head: 4, cosine: 0.599973
+token_id: 393, token: "with", head: 4, cosine: 0.607397
+token_id: 584, token: "sh", head: 4, cosine: 0.629185
+token_id: 122, token: "ens", head: 4, cosine: 0.633083
+token_id: 328, token: "st", head: 4, cosine: 0.637121
+token_id: 414, token: "pub ", head: 4, cosine: 0.647366
+token_id: 598, token: "_", head: 3, cosine: 0.647582
+token_id: 274, token: "t ", head: 4, cosine: 0.649600
+token_id: 564, token: "s", head: 4, cosine: 0.649679
+token_id: 233, token: "\n    /// ", head: 4, cosine: 0.662096
+token_id: 87, token: "of", head: 4, cosine: 0.667237
+token_id: 21, token: "s: ", head: 4, cosine: 0.667291
+token_id: 55, token: "line", head: 4, cosine: 0.669367
+token_id: 473, token: "s ", head: 4, cosine: 0.670664
+token_id: 138, token: "2, ", head: 4, cosine: 0.676291
+token_id: 433, token: "e", head: 4, cosine: 0.680534
+token_id: 470, token: "format", head: 4, cosine: 0.691581
+token_id: 382, token: "ir", head: 4, cosine: 0.692219
+token_id: 527, token: "//", head: 4, cosine: 0.693792
+token_id: 503, token: "I", head: 4, cosine: 0.709106
+token_id: 121, token: "/// ", head: 4, cosine: 0.711867
+token_id: 391, token: "const", head: 4, cosine: 0.714640
+token_id: 485, token: "ces", head: 4, cosine: 0.720311
+token_id: 83, token: "Storage", head: 4, cosine: 0.722642
+token_id: 147, token: "k", head: 4, cosine: 0.722670
+token_id: 392, token: "<D", head: 4, cosine: 0.724198
+token_id: 412, token: "al", head: 4, cosine: 0.725515
+token_id: 82, token: "self.", head: 4, cosine: 0.726636
+token_id: 594, token: "B", head: 4, cosine: 0.727489
+token_id: 29, token: "ur", head: 4, cosine: 0.731126
+token_id: 329, token: "ation", head: 4, cosine: 0.732588
+token_id: 96, token: "Self::", head: 4, cosine: 0.733360
+token_id: 558, token: "t", head: 4, cosine: 0.735875
+token_id: 209, token: "///\n    /// ", head: 4, cosine: 0.738057
+token_id: 407, token: "for", head: 4, cosine: 0.740767
+token_id: 388, token: "t::", head: 4, cosine: 0.748152
+token_id: 42, token: "() ", head: 4, cosine: 0.751697
+token_id: 43, token: "&mut ", head: 4, cosine: 0.753123
+```
+
+- `cargo run --release -- compare chk-001-step-1140.dat chk-002-step-9420.dat --limit=50 --reverse`
+
+```
+chk-001-step-1140.dat is parent of chk-002-step-9420.dat.
+chk-002-step-9420.dat is 8280-steps further trained version of chk-001-step-1140.dat
+key: head_2_6_q, cosine: 1.000000
+key: head_5_4_q, cosine: 1.000000
+key: head_2_3_q, cosine: 1.000000
+key: head_2_1_q, cosine: 1.000000
+key: head_5_4_k, cosine: 1.000000
+key: head_1_7_q, cosine: 1.000000
+key: head_2_4_k, cosine: 1.000000
+key: head_2_3_k, cosine: 1.000000
+key: head_2_2_k, cosine: 1.000000
+key: head_2_0_q, cosine: 1.000000
+key: head_2_1_k, cosine: 1.000000
+key: head_2_0_k, cosine: 1.000000
+key: head_2_7_q, cosine: 1.000000
+key: head_2_7_k, cosine: 1.000000
+key: head_2_2_q, cosine: 1.000000
+key: head_1_3_k, cosine: 1.000000
+key: head_1_7_k, cosine: 1.000000
+key: head_2_6_k, cosine: 1.000000
+key: head_1_1_q, cosine: 1.000000
+key: head_5_7_q, cosine: 1.000000
+key: head_1_3_q, cosine: 1.000000
+key: head_2_5_k, cosine: 1.000000
+key: head_2_4_q, cosine: 1.000000
+key: head_1_1_k, cosine: 1.000000
+key: head_5_5_q, cosine: 1.000000
+key: head_2_5_q, cosine: 1.000000
+key: head_5_7_k, cosine: 1.000000
+key: head_5_0_k, cosine: 1.000000
+key: head_5_0_q, cosine: 1.000000
+key: head_1_5_k, cosine: 1.000000
+key: head_5_5_k, cosine: 1.000000
+key: head_1_5_q, cosine: 1.000000
+key: head_5_1_k, cosine: 1.000000
+key: head_1_4_k, cosine: 1.000000
+key: head_1_6_k, cosine: 1.000000
+key: head_1_2_q, cosine: 1.000000
+key: head_1_0_q, cosine: 1.000000
+key: head_1_2_k, cosine: 1.000000
+key: head_1_0_k, cosine: 1.000000
+key: head_1_6_q, cosine: 1.000000
+key: head_5_1_q, cosine: 1.000000
+key: head_1_4_q, cosine: 1.000000
+key: head_5_6_k, cosine: 1.000000
+key: head_4_5_k, cosine: 1.000000
+key: head_5_6_q, cosine: 1.000000
+key: head_5_2_q, cosine: 1.000000
+key: head_5_3_k, cosine: 1.000000
+key: head_4_0_q, cosine: 1.000000
+key: head_6_7_k, cosine: 1.000000
+key: head_5_3_q, cosine: 1.000000
+token_id: 266, token: "colum", head: 1, cosine: 1.000000
+token_id: 266, token: "colum", head: 7, cosine: 1.000000
+token_id: 266, token: "colum", head: 6, cosine: 1.000000
+token_id: 266, token: "colum", head: 0, cosine: 1.000000
+token_id: 266, token: "colum", head: 4, cosine: 1.000000
+token_id: 266, token: "colum", head: 5, cosine: 1.000000
+token_id: 266, token: "colum", head: 3, cosine: 1.000000
+token_id: 266, token: "colum", head: 2, cosine: 1.000000
+token_id: 518, token: "alField", head: 5, cosine: 1.000000
+token_id: 518, token: "alField", head: 1, cosine: 1.000000
+token_id: 518, token: "alField", head: 7, cosine: 1.000000
+token_id: 518, token: "alField", head: 2, cosine: 0.999999
+token_id: 518, token: "alField", head: 6, cosine: 0.999999
+token_id: 518, token: "alField", head: 0, cosine: 0.999999
+token_id: 489, token: "tor", head: 7, cosine: 0.999997
+token_id: 417, token: ";", head: 1, cosine: 0.999996
+token_id: 262, token: "9", head: 2, cosine: 0.999995
+token_id: 262, token: "9", head: 7, cosine: 0.999995
+token_id: 600, token: " to ", head: 5, cosine: 0.999994
+token_id: 262, token: "9", head: 0, cosine: 0.999994
+token_id: 463, token: "ag", head: 0, cosine: 0.999994
+token_id: 362, token: "q", head: 5, cosine: 0.999994
+token_id: 262, token: "9", head: 6, cosine: 0.999994
+token_id: 482, token: "32", head: 5, cosine: 0.999994
+token_id: 58, token: "fault", head: 5, cosine: 0.999994
+token_id: 252, token: "rom", head: 6, cosine: 0.999993
+token_id: 417, token: ";", head: 2, cosine: 0.999993
+token_id: 54, token: "{\n            ", head: 5, cosine: 0.999992
+token_id: 92, token: " {\n    ", head: 7, cosine: 0.999992
+token_id: 600, token: " to ", head: 0, cosine: 0.999992
+token_id: 482, token: "32", head: 0, cosine: 0.999991
+token_id: 252, token: "rom", head: 5, cosine: 0.999991
+token_id: 262, token: "9", head: 5, cosine: 0.999991
+token_id: 252, token: "rom", head: 2, cosine: 0.999991
+token_id: 54, token: "{\n            ", head: 7, cosine: 0.999991
+token_id: 362, token: "q", head: 7, cosine: 0.999991
+token_id: 428, token: "bas", head: 0, cosine: 0.999991
+token_id: 538, token: " }", head: 0, cosine: 0.999990
+token_id: 91, token: "::from_", head: 0, cosine: 0.999990
+token_id: 538, token: " }", head: 2, cosine: 0.999990
+token_id: 324, token: "fn ", head: 7, cosine: 0.999990
+token_id: 417, token: ";", head: 0, cosine: 0.999989
+token_id: 362, token: "q", head: 6, cosine: 0.999989
+token_id: 463, token: "ag", head: 7, cosine: 0.999989
+token_id: 252, token: "rom", head: 1, cosine: 0.999989
+token_id: 541, token: "par", head: 7, cosine: 0.999989
+token_id: 417, token: ";", head: 5, cosine: 0.999989
+token_id: 376, token: ".clone()", head: 0, cosine: 0.999989
+token_id: 120, token: ");\n        ", head: 5, cosine: 0.999989
+token_id: 91, token: "::from_", head: 2, cosine: 0.999989
+```
+
+Maybe... something is happening!
+
+1. qkv matrix of heads haven't changed much. The biggest change is 0.9216 of head_7_7_v, which isn't that big. Top 50 smallest changes are all qkv matrices.
+2. Top 50 biggest changes in token embeddings are all happening at head-4. Maybe the other heads have converged and it's struggling to finetune head-4?
+
+I have to give it another try!
+
+```sh
+cp chk-002-step-9420.dat model.dat
+
+cargo run --release -- train --model model.dat --steps 3081 --dropout 0.1
+cp model.dat chk-003-step-12500.dat
+
+cargo run --release -- train --model model.dat --steps 2501 --dropout 0.1
+cp model.dat chk-004-step-15000.dat
+
+cargo run --release -- train --model model.dat --steps 2501 --dropout 0.1
+cp model.dat chk-005-step-17500.dat
+
+cargo run --release -- train --model model.dat --steps 2501 --dropout 0.1
+cp model.dat chk-006-step-20000.dat
+
+cargo run --release -- train --model model.dat --steps 2501 --dropout 0.1
+cp model.dat chk-007-step-22500.dat
+
+cargo run --release -- train --model model.dat --steps 2501 --dropout 0.1
+cp model.dat chk-008-step-25000.dat
+```
