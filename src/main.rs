@@ -73,7 +73,7 @@ fn run() -> Result<(), Error> {
                 .optional_flag(&["--interactive"])
                 .arg_flag_with_default("--model", "model.dat", ArgType::Path)
                 .arg_flag_with_default("--tokenizer", "ascii", ArgType::String)
-                .arg_flag_with_default("--tokenizer-data", "tokenizer.json", ArgType::Path)
+                .optional_arg_flag("--tokenizer-data", ArgType::Path)
                 .arg_flag_with_default("--num-tokens", "80", ArgType::IntegerBetween { min: Some(0), max: None })
                 .arg_flag_with_default("--embedding-degree", "80", ArgType::IntegerBetween { min: Some(0), max: None })
                 .arg_flag_with_default("--num-layers", "4", ArgType::IntegerBetween { min: Some(0), max: None })
@@ -84,7 +84,14 @@ fn run() -> Result<(), Error> {
 
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
             let mut tokenizer = parsed_args.arg_flags.get("--tokenizer").unwrap().to_string();
-            let mut tokenizer_data = parsed_args.arg_flags.get("--tokenizer-data").unwrap().to_string();
+            let mut tokenizer_data = match parsed_args.arg_flags.get("--tokenizer-data") {
+                Some(tokenizer_data) => tokenizer_data.to_string(),
+                None => match tokenizer.as_str() {
+                    "char" => String::from("dataset.txt"),
+                    "bpe" => String::from("tokenizer.json"),
+                    _ => String::new(),
+                },
+            };
             let mut num_tokens = parsed_args.arg_flags.get("--num-tokens").unwrap().parse::<usize>().unwrap();
             let mut embedding_degree = parsed_args.arg_flags.get("--embedding-degree").unwrap().parse::<usize>().unwrap();
             let mut num_layers = parsed_args.arg_flags.get("--num-layers").unwrap().parse::<usize>().unwrap();
@@ -279,9 +286,7 @@ fn run() -> Result<(), Error> {
                 |_ch| {},
             )?;
 
-            // Generate 100 character with the currently trained model
             println!("{}", tokenizer.untokenize(&inference));
-
             Ok(())
         },
         Some("train") => {
@@ -488,6 +493,32 @@ fn run() -> Result<(), Error> {
 
             Ok(())
         },
+        Some("loss") => {
+            let parsed_args = ArgParser::new()
+                .arg_flag_with_default("--model", "model.dat", ArgType::Path)
+                .arg_flag_with_default("--limit", "10", ArgType::IntegerBetween { min: Some(0), max: None })
+                .args(ArgType::Path, ArgCount::None)
+                .parse(&args, 2)?;
+
+            let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
+            let bytes = read_bytes(&model_path)?;
+            let model: Model = bincode::deserialize(&bytes)?;
+            let limit = parsed_args.arg_flags.get("--limit").unwrap().parse::<usize>().unwrap();
+            let mut logs = model.logs.into_iter().filter(
+                |log| matches!(log.kind, LogKind::TrainStep { .. })
+            ).collect::<Vec<_>>();
+
+            if logs.len() > limit {
+                logs = logs[(logs.len() - limit)..].to_vec();
+            }
+
+            for log in logs {
+                let LogKind::TrainStep { avg_loss, .. } = log.kind else { unreachable!() };
+                println!("{avg_loss}");
+            }
+
+            Ok(())
+        },
         Some("info") => {
             let parsed_args = ArgParser::new()
                 .arg_flag_with_default("--model", "model.dat", ArgType::Path)
@@ -496,7 +527,7 @@ fn run() -> Result<(), Error> {
 
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
             let bytes = read_bytes(&model_path)?;
-            let model: Model = bincode::deserialize(&bytes).unwrap();
+            let model: Model = bincode::deserialize(&bytes)?;
             let Hyperparameters {
                 num_tokens,
                 vocab_size,
@@ -568,9 +599,9 @@ fn run() -> Result<(), Error> {
             let model1_path = model_paths[0].to_string();
             let model2_path = model_paths[1].to_string();
             let bytes = read_bytes(&model1_path)?;
-            let model1: Model = bincode::deserialize(&bytes).unwrap();
+            let model1: Model = bincode::deserialize(&bytes)?;
             let bytes = read_bytes(&model2_path)?;
-            let model2: Model = bincode::deserialize(&bytes).unwrap();
+            let model2: Model = bincode::deserialize(&bytes)?;
             let tokenizer = Tokenizer::from_inner(model1.tokenizer.clone());
 
             let mut same_until = model1.logs.len().min(model2.logs.len());
