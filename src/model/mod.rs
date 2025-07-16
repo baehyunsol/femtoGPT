@@ -1,6 +1,8 @@
+use crate::error::Error;
 use crate::gpt::TrainingState;
 use crate::tokenizer::TokenizerInner;
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 mod info;
 mod log;
@@ -11,9 +13,30 @@ pub use log::{Log, LogKind};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Model {
     pub tokenizer: TokenizerInner,
+    pub positional_encoding: PositionalEncoding,
     pub hyperparameters: Hyperparameters,
     pub training_state: TrainingState,
     pub logs: Vec<Log>,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Serialize, PartialEq)]
+pub enum PositionalEncoding {
+    None,
+    Sinusoidal,
+    Rotary,
+}
+
+impl FromStr for PositionalEncoding {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Error> {
+        match s {
+            "none" => Ok(Self::None),
+            "sinusoidal" => Ok(Self::Sinusoidal),
+            "rotary" => Ok(Self::Rotary),
+            _ => todo!(),
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Serialize, PartialEq)]
