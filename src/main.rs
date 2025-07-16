@@ -558,10 +558,14 @@ fn run() -> Result<(), Error> {
         },
         Some("compare") => {
             let parsed_args = ArgParser::new()
+                .optional_flag(&["--reverse"])
+                .arg_flag_with_default("--limit", "10", ArgType::IntegerBetween { min: Some(1), max: None })
                 .args(ArgType::Path, ArgCount::Exact(2))
                 .parse(&args, 2)?;
 
             let model_paths = parsed_args.get_args_exact(2)?;
+            let reverse = parsed_args.get_flag(0).is_some();
+            let limit = parsed_args.arg_flags.get("--limit").unwrap().parse::<usize>().unwrap();
             let model1_path = model_paths[0].to_string();
             let model2_path = model_paths[1].to_string();
             let bytes = read_bytes(&model1_path)?;
@@ -640,10 +644,15 @@ fn run() -> Result<(), Error> {
                 cosine_by_key.push((key.to_string(), s));
             }
 
+            cosine_by_key.sort_by_key(|(key, _)| key.to_string());
             cosine_by_key.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
-            for (key, cosine) in &cosine_by_key[..10] {
-                println!("key: {key}, cosine: {cosine:.4}");
+            if reverse {
+                cosine_by_key = cosine_by_key.into_iter().rev().collect();
+            }
+
+            for (key, cosine) in &cosine_by_key[..limit.min(cosine_by_key.len())] {
+                println!("key: {key}, cosine: {cosine:.6}");
             }
 
             let embeddings1 = model1.training_state.tensors.get("token_embedding").unwrap();
@@ -668,10 +677,15 @@ fn run() -> Result<(), Error> {
                 }
             }
 
+            cosine_by_token.sort_by_key(|(_, token, _, _)| token.to_string());
             cosine_by_token.sort_by(|(_, _, _, a), (_, _, _, b)| a.partial_cmp(b).unwrap());
 
-            for (token_id, token, head_i, cosine) in &cosine_by_token[..10] {
-                println!("token_id: {token_id}, token: {token:?}, head: {head_i}, cosine: {cosine:.4}");
+            if reverse {
+                cosine_by_token = cosine_by_token.into_iter().rev().collect();
+            }
+
+            for (token_id, token, head_i, cosine) in &cosine_by_token[..limit.min(cosine_by_key.len())] {
+                println!("token_id: {token_id}, token: {token:?}, head: {head_i}, cosine: {cosine:.6}");
             }
 
             Ok(())
