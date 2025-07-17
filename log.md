@@ -1,6 +1,7 @@
 # 1. Training a very simple model 1 (success)
 
 - tokenizer: simple (the one in the original repository, now deprecated)
+- positional encoding: absolute
 - embedding degree: 64, num layers: 4, num heads 4 (232K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 685, loss: 1.4672, elapsed: 2m 16s (apple M3 pro)
@@ -11,6 +12,7 @@ It can produce a plausible output!!!
 # 2. Training a very simple model 2 (success)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 64, num layers: 4, num heads 4 (232K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 629, loss: 1.4760, elapsed: 2m 9s (apple M3 pro)
@@ -21,6 +23,7 @@ It can produce a plausible output!!!
 # 3. Training a very simple model 3 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 64, num layers: 6, num heads 4 (331K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 874, loss: 1.9082, elapsed: 4m 24s (apple M3 pro)
@@ -39,6 +42,7 @@ Why not? The only difference is that the model has more layers than before. Why 
 # 4. Training a Rust coder 1 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 64, num layers: 6, num heads 4 (331K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 370, loss: 2.6159, elapsed: 1m 45s (apple M3 pro)
@@ -49,6 +53,7 @@ It doesn't work at all! I guess I need a bigger model
 # 5. Training a Rust coder 2 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 256, num layers: 8, num heads 8 (6.4M params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 274, loss: 2.7485, elapsed: 12m 41s (apple M3 pro)
@@ -61,6 +66,7 @@ It takes too long to converge. I'll continue on this later.
 # 6. Training a Rust coder 3 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 64, num layers: 4, num heads 4 (232K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 508, loss: 2.3020, elapsed: 1m 43s (apple M3 pro)
@@ -73,6 +79,7 @@ Looking at its log_probs: `[(' ', 88.8%), ('}', 0.9%), ('l', 0.8%), ('i', 0.7%),
 # 7. Training an addition model 1 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 64, num layers: 4, num heads 4 (232K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 716, loss: 1.3845, elapsed: 2m 24s (apple M3 pro)
@@ -100,6 +107,7 @@ It isn't that bad for this small model. Let's try again with a bigger one.
 # 8. Training an addition model 2 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 64, num layers: 6, num heads 4 (331K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 996, loss: 1.3336, elapsed: ?m ??s (apple M3 pro)
@@ -124,6 +132,7 @@ It isn't that different from #7.
 # 9. Training a very simple model 4 (success)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 80, num layers: 6, num heads 4 (506K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 1856, loss: 1.4313, elapsed: 9m 52s (apple M3 pro)
@@ -134,6 +143,7 @@ I just figured out why I have failed #3. It's because larger models take longer 
 # 10. Training a very simple model 5 (success)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 32, num layers: 4, num heads 2 (67K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 528, loss: 1.5303, elapsed: 0m 50s (Intel Core Ultra 7 155H)
@@ -144,6 +154,7 @@ I wanted to see if even smaller models can be trained on this data. And it works
 # 11. Training an English model 1 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 128, num layers: 6, num heads: 8 (1.2M params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 400, loss: 3.2494, elapsed: ?m ??s (Intel Core Ultra 7 155H)
@@ -157,6 +168,7 @@ I only had a few minutes and it's not enough to train this size of model. I have
 # 12. Training an English model 2 (fail)
 
 - tokenizer: bpe (50 epochs, 566 tokens)
+- positional encoding: absolute
 - embedding degree: 160, num layers: 8, num heads: 8 (2.6M params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 338, loss: 5.8933, elapsed: ?m ??s (Intel Core Ultra 7 155H)
@@ -171,6 +183,7 @@ I just wanted to test the new bpe tokenizer. I guess I have to increase the voca
 
 - tokenizer: byte
   - It doesn't matter, though
+- positional encoding: absolute
 - embedding degree: 640, num layers: 8, num heads: 16 (39.7M parameters)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: n/a, loss: n/a, elapsed: n/a (Intel Core Ultra 7 155H)
@@ -183,6 +196,7 @@ The first step was fine, it consumed about 10 GiB of RAM, when `num_tokens` is 8
 # 14. Training a very large model (fail)
 
 - tokenizer: bpe (1054 tokens)
+- positional encoding: absolute
 - embedding degree: 768, num layers: 8, num heads: 16 (58.3M parameters)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 689, loss: 6.4152, elapsed: 9h 52m (AWS EC2 m5.4xlarge: 16vCPU, 64GB RAM)
@@ -215,6 +229,7 @@ nohup cargo run --release -- train --dropout=0.1 &
 # 15. Training an addition model 3 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 160, num layers: 6, num heads: 8 (1.9M parameters)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 802, loss: 2.4628, elapsed: 15m 20s (Intel Core Ultra 7 155H)
@@ -229,6 +244,7 @@ I don't understand. I just want it to generate lines that *look like* additions,
 # 16. Training an addition model 4 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 160, num layers: 6, num heads: 8 (1.9M parameters)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 360, loss: 2.4748, elapsed: 6m 56s (Intel Core Ultra 7 155H)
@@ -240,6 +256,7 @@ I was curious whether setting dropout to 0.1 might change something. It didn't.
 # 17. Training an addition model 5 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 80, num layers 4, num heads: 4 (351K parameters)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 676, loss: 1.4216, elapsed: 3m 4s (Intel Core Ultra 7 155H)
@@ -268,6 +285,7 @@ It converged much faster than #15 and #16, though. Maybe #15 would converge if I
 # 18. Training a Rust coder 4 (fail)
 
 - tokenizer: bpe (1054 tokens)
+- positional encoding: absolute
 - embedding: 80, num layers: 4, num heads: 4 (480K parameters)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 1018, loss: 4.7967, elapsed: ?m ??s (Intel Core Ultra 7 155H)
@@ -279,6 +297,7 @@ It might converge someday. I'll try a bit larger model with the same dataset bef
 # 19. Training a Rust coder 5 (fail)
 
 - tokenizer: bpe (1054 tokens)
+- positional encoding: absolute
 - embedding degree: 192, num layers: 8, num heads: 8 (3.9M parameters)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 7684, loss: 6.4670, elapsed: 8 ~ 9 hours (AWS EC2 m5.4xlarge: 16vCPU, 64GB RAM)
@@ -290,6 +309,7 @@ It's using 3~5 GiB of RAM, when `num_tokens` is 80.
 # 20. Training a simple model 1
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 80, num layers: 4, num heads 4 (351K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 1447, loss: 1.6670, elapsed: ?m ??s (Intel Core Ultra 7 155H)
@@ -317,6 +337,7 @@ I'll mark it "success" if all the action's correct rates are greater than 70%
 # 21. Training a simple model 2 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 96, num layers: 6, num heads 4 (718K params)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 1807, loss: 1.7154, elapsed: 12m 31s (apple M3 pro)
@@ -341,6 +362,7 @@ Evaluation
 # 22. Training a simple model 3 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 144, num layers: 6, num heads 6 (1.5M params)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 1143, loss: 2.7072, elapsed: ??m ??s (apple M3 pro)
@@ -354,6 +376,7 @@ It seems like it's stuck at a wrong local optima. It's not smart enough to run t
 # 23. Training a simple model 4 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 144, num layers: 6, num heads 6 (1.5M params)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 4229, loss: 1.6876, elapsed: ??m ??s (apple M3 pro)
@@ -376,6 +399,7 @@ I forgot to add the evaluation result, but it was worse than #21.
 # 24. Training a simple model 5 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 96, num layers: 8, num heads 4 (942K params)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 3756, loss: 1.6839, elapsed: ??m ??s (apple M3 pro)
@@ -409,6 +433,7 @@ This is the first-ever model to understand an action other than 0 or 9.
 # 25. Training a simple model 6 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 144, num layers: 8, num heads 6 (2M params)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step 1234, loss: 2.6963, elapsed: ??m ??s (apple M3 pro)
@@ -420,6 +445,7 @@ This is the first-ever model to understand an action other than 0 or 9.
 # 26. Training a simple model 7 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 144, num layers: 8, num heads 6 (2M params)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step 933, loss: 2.7182, elapsed: ??m ??s (apple M3 pro)
@@ -433,6 +459,7 @@ We have lost Euler.
 # 27. Training a simple model 8 (fail)
 
 - tokenizer: byte
+- positional encoding: absolute
 - embedding degree: 64, num layers: 4, num heads 4 (232K params)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 1665, loss: 1.6631, elapsed: ??m ??s (apple M3 pro)
@@ -460,6 +487,7 @@ It's much smaller than #20 ~ #26, but does better than them. The lesson is that 
 # 28. Training a Rust coder 6 (failed)
 
 - tokenizer: bpe (630 tokens)
+- positional encoding: absolute
 - embedding degree: 192, num layers: 8, num heads: 8 (3.7M parameters)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 9440 loss: 5.9775, elapsed: 11 ~ 12h (AWS EC2 m5.4xlarge: 16vCPU, 64GB RAM)
@@ -960,3 +988,86 @@ I prompted them with `"acbafbe3"`, whose answer is `"gih;\n"`
   - output: `acbafbe3affcf...` (followed by a sequence of meaningless alphabets)
 
 Removing PE is always better...
+
+# 31. Training an English model 1
+
+- tokenizer: bpe (???? tokens)
+- positional encoding: none
+- embedding degree: 256, num layers: 8, num heads 8 (???M params)
+- dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- step: 1665, loss: 1.6631, elapsed: ??m ??s (AWS EC2 m5.4xlarge: 16vCPU, 64GB RAM)
+- data: downloaded some files from [huggingface](https://huggingface.co/datasets/wikimedia/wikipedia/tree/main/20231101.en) and postprocessed it
+  - I picked 4255 documents which contains keyword `"rogramming language"` from the dataset and concat them with delimiter `"<|endofdocument|>"`
+
+```sh
+cargo run --release -- train-bpe --reserve-tokens 64 --vocab-size 1024
+cargo run --release -- count-tokens > count-tokens.json
+
+# check the tokens here!
+
+# step 1: initialize 4 models and train each for 1000 steps
+
+cargo run --release -- init --model exp1.dat --tokenizer bpe --positional-encoding none --num-tokens 80 --embedding-degree 256 --num-layers 8 --num-heads 8
+cargo run --release -- train --model exp1.dat --dropout 0.1 --steps 1001
+cp exp1.dat exp1-chk001.dat
+
+cargo run --release -- init --model exp2.dat --tokenizer bpe --positional-encoding none --num-tokens 80 --embedding-degree 256 --num-layers 8 --num-heads 8
+cargo run --release -- train --model exp2.dat --dropout 0.1 --steps 1001
+cp exp2.dat exp2-chk001.dat
+
+cargo run --release -- init --model exp3.dat --tokenizer bpe --positional-encoding none --num-tokens 80 --embedding-degree 256 --num-layers 8 --num-heads 8
+cargo run --release -- train --model exp3.dat --dropout 0.1 --steps 1001
+cp exp3.dat exp3-chk001.dat
+
+cargo run --release -- init --model exp4.dat --tokenizer bpe --positional-encoding none --num-tokens 80 --embedding-degree 256 --num-layers 8 --num-heads 8
+cargo run --release -- train --model exp4.dat --dropout 0.1 --steps 1001
+cp exp4.dat exp4-chk001.dat
+
+# step 2: train each for 5000 more steps
+
+cargo run --release -- train --model exp1.dat --dropout 0.1 --steps 5001
+cp exp1.dat exp1-chk002.dat
+
+cargo run --release -- train --model exp2.dat --dropout 0.1 --steps 5001
+cp exp2.dat exp2-chk002.dat
+
+cargo run --release -- train --model exp3.dat --dropout 0.1 --steps 5001
+cp exp3.dat exp3-chk002.dat
+
+cargo run --release -- train --model exp4.dat --dropout 0.1 --steps 5001
+cp exp4.dat exp4-chk002.dat
+
+# step 3: insert a layer to each model and train 3000 steps
+
+cargo run --release -- insert-layer --input exp1.dat --output exp1-ext1.dat --insert-at 6
+cargo run --release -- train --model exp1-ext1.dat --dropout 0.1 --steps 3001
+cp exp1-ext1.dat exp1-ext1-chk001.dat
+
+cargo run --release -- insert-layer --input exp1.dat --output exp1-ext2.dat --insert-at 6
+cargo run --release -- train --model exp1-ext2.dat --dropout 0.1 --steps 3001
+cp exp1-ext2.dat exp1-ext2-chk001.dat
+
+cargo run --release -- insert-layer --input exp2.dat --output exp2-ext1.dat --insert-at 6
+cargo run --release -- train --model exp2-ext1.dat --dropout 0.1 --steps 3001
+cp exp2-ext1.dat exp2-ext1-chk001.dat
+
+cargo run --release -- insert-layer --input exp2.dat --output exp2-ext2.dat --insert-at 6
+cargo run --release -- train --model exp2-ext2.dat --dropout 0.1 --steps 3001
+cp exp2-ext2.dat exp2-ext2-chk001.dat
+
+cargo run --release -- insert-layer --input exp3.dat --output exp3-ext1.dat --insert-at 6
+cargo run --release -- train --model exp3-ext1.dat --dropout 0.1 --steps 3001
+cp exp3-ext1.dat exp3-ext1-chk001.dat
+
+cargo run --release -- insert-layer --input exp3.dat --output exp3-ext2.dat --insert-at 6
+cargo run --release -- train --model exp3-ext2.dat --dropout 0.1 --steps 3001
+cp exp3-ext2.dat exp3-ext2-chk001.dat
+
+cargo run --release -- insert-layer --input exp4.dat --output exp4-ext1.dat --insert-at 6
+cargo run --release -- train --model exp4-ext1.dat --dropout 0.1 --steps 3001
+cp exp4-ext1.dat exp4-ext1-chk001.dat
+
+cargo run --release -- insert-layer --input exp4.dat --output exp4-ext2.dat --insert-at 6
+cargo run --release -- train --model exp4-ext2.dat --dropout 0.1 --steps 3001
+cp exp4-ext2.dat exp4-ext2-chk001.dat
+```
