@@ -760,3 +760,203 @@ cp model.dat chk-007-step-22500.dat
 cargo run --release -- train --model model.dat --steps 2501 --dropout 0.1
 cp model.dat chk-008-step-25000.dat
 ```
+
+# 29. Comparing positional encodings 1
+
+Below tuples are `(embedding_degree, num layers, num heads, positional encoding, steps)`
+
+All the cases use the ascii tokenizer, and `python3 dummy_data/simple_sequence.py > dataset.txt` dataset.
+
+You can see the entire training process below.
+
+1. (144, 6, 6, none, 500)
+  - loss: 0.7596
+  - output: `a^^c@@g##e$$e%%e^^a@@g##b$$c%%e^^d@@c##f$$c%%e^^h@@c##c$$c%%e^^e@@d##c$$f%%d^^d@@a##e$$a%%b^^b@@b##e$`
+2. (144, 7, 6, none, 700)
+  - inserted a layer to #1 (layer-3), and trained 200 more steps
+  - loss: 0.7472
+  - output: `a@@e##f$$e%%e^^f@@e##g$$h%%d^^c@@e##c$$d%%c^^c@@e##d$$d%%e^^d@@e##f$$h%%e^^e@@c##c$$c%%d^^g@@f##g$$d%`
+3. (144, 6, 6, none, 500)
+  - loss: 0.7716
+  - output: `a%%b^^g@@h##f$$e%%e^^b@@c##f$$c%%a^^b@@e##d$$c%%h^^a@@c##a$$c%%a^^f@@h##f$$f%%h^^e@@e##f$$f%%e^^a@@g#`
+4. (144, 7, 6, none, 700)
+  - inserted a layer to #3 (layer-3), and trained 200 more steps
+  - loss: 0.7554
+  - output: `a%%h^^h@@a##a$$f%%g^^f@@h##h$$g%%a^^b@@h##d$$f%%h^^e@@e##f$$b%%a^^f@@e##f$$g%%f^^f@@h##e$$g%%a^^f@@e#`
+5. (144, 6, 6, none, 500)
+  - loss: 0.7581
+  - output: `a%%a^^g@@d##d$$f%%a^^g@@h##c$$g%%d^^f@@f##f$$g%%b^^f@@g##b$$g%%e^^d@@c##f$$d%%b^^e@@a##d$$f%%b^^g@@f#`
+6. (144, 7, 6, none, 700)
+  - inserted a layer to #5 (layer-3), and trained 200 more steps
+  - loss: 0.7657
+  - output: `a@@d##h$$a%%h^^b@@d##h$$a%%b^^c@@h##d$$c%%h^^c@@b##a$$a%%a^^b@@c##c$$d%%c^^d@@a##h$$c%%b^^c@@c##d$$b%`
+7. (144, 6, 6, absolute, 500)
+  - loss: 1.4594
+  - output: `a@$@f%%%f^^^b%#%f^^$@##%a^^$@%#a$@h##g^$@b##%d^^$@e##f^$@@@@###%a^$$e#%c^$@@@e##%f^$$b#%a^^$@@@%##c$$`
+8. (144, 7, 6, absolute, 700)
+  - inserted a layer to #7 (layer-3), and trained 200 more steps
+  - loss: 1.0524
+  - output: `a%#c$$f%%a^^d@@c##g$$d%%a^^g@@e##b$$e%%h^^d@@g##f$$b%%a^^c@@d##g$$e%%a^^g@@e##f$$f%%b^^a@@b##%b^^g@@b`
+9. (144, 6, 6, absolute, 500)
+  - loss: 2.4040
+  - output: `a^#@$$^#$#$$^##$$#$$@##$^^^@^$^$@$@#$@^#$^@$^@$^@$$###@^##$$@^#@$$@$#$$##@#@@$#@@$^#^@$#$@#@@$@#^@$#^`
+10. (144, 7, 6, absolute, 700)
+  - inserted a layer to #9 (layer-3), and trained 200 more steps
+  - loss: 2.4025
+  - output: `a%^@%#@%@^@#@^@@^^^^^@#%^^^^^%%#%^^@^%#^%#%%^^@@%#@@^#^##%@@#@##@^^##@^@#@@@#%##%#%@#^%@%@#%^^@@^^^^#`
+11. (144, 6, 6, absolute, 500)
+  - loss: 1.6935
+  - output: `a^^#^##^^^^^^a@@$$g%%%%#^#^^^d@@@$@a%%#^##^a@@@d##%^#^c@$@g^^%^^^d@$$dg$$g%%%%##%#a@$@$d%###^#h@@$$g%`
+12. (144, 7, 6, absolute, 700)
+  - inserted a layer to #11 (layer-3), and trained 200 more steps
+  - loss: 1.4461
+  - output: `a#^^a$$h%%b^b@@h%%b^b@@c%#^a@@c%%b^^^^^d@@@a#%^^^d@@$a%%%#^^d@@$b#%%%#b@@$b%%%#^^b@@$c%%%%b@$$b%%%^h@`
+
+Disabling positional-encoding made the models better! Models without positional encoding all learnt the patterns of the special characters (`@#$%^`), but failed to learn the alphabets.
+
+The best absolute-pe model is worse than the worst none-pe model.
+
+```sh
+cargo build --release
+cp target/release/femto-gpt gpt
+echo "---------"
+echo "init exp1"
+./gpt init --model exp1.dat --tokenizer ascii --positional-encoding none --embedding-degree 144 --num-layers 6 --num-heads 6 1> mute
+./gpt train --model exp1.dat --dropout 0.1 --steps 500 1> mute
+echo loss
+./gpt loss --model exp1.dat --limit 1
+./gpt infer --model exp1.dat "a"
+
+echo "exp1-ext"
+./gpt insert-layer --input exp1.dat --output exp1-ext.dat --insert-at 3
+./gpt train --model exp1-ext.dat --dropout 0.1 --steps 200 1> mute
+echo loss
+./gpt loss --model exp1-ext.dat --limit 1
+./gpt infer --model exp1-ext.dat "a"
+
+echo "---------"
+echo "init exp2"
+./gpt init --model exp2.dat --tokenizer ascii --positional-encoding none --embedding-degree 144 --num-layers 6 --num-heads 6 1> mute
+./gpt train --model exp2.dat --dropout 0.1 --steps 500 1> mute
+echo loss
+./gpt loss --model exp2.dat --limit 1
+./gpt infer --model exp2.dat "a"
+
+echo "exp2-ext"
+./gpt insert-layer --input exp2.dat --output exp2-ext.dat --insert-at 3
+./gpt train --model exp2-ext.dat --dropout 0.1 --steps 200 1> mute
+echo loss
+./gpt loss --model exp2-ext.dat --limit 1
+./gpt infer --model exp2-ext.dat "a"
+
+echo "---------"
+echo "init exp3"
+./gpt init --model exp3.dat --tokenizer ascii --positional-encoding none --embedding-degree 144 --num-layers 6 --num-heads 6 1> mute
+./gpt train --model exp3.dat --dropout 0.1 --steps 500 1> mute
+echo loss
+./gpt loss --model exp3.dat --limit 1
+./gpt infer --model exp3.dat "a"
+
+echo "exp3-ext"
+./gpt insert-layer --input exp3.dat --output exp3-ext.dat --insert-at 3
+./gpt train --model exp3-ext.dat --dropout 0.1 --steps 200 1> mute
+echo loss
+./gpt loss --model exp3-ext.dat --limit 1
+./gpt infer --model exp3-ext.dat "a"
+
+echo "---------"
+echo "init exp4"
+./gpt init --model exp4.dat --tokenizer ascii --positional-encoding absolute --embedding-degree 144 --num-layers 6 --num-heads 6 1> mute
+./gpt train --model exp4.dat --dropout 0.1 --steps 500 1> mute
+echo loss
+./gpt loss --model exp4.dat --limit 1
+./gpt infer --model exp4.dat "a"
+
+echo "exp4-ext"
+./gpt insert-layer --input exp4.dat --output exp4-ext.dat --insert-at 3
+./gpt train --model exp4-ext.dat --dropout 0.1 --steps 200 1> mute
+echo loss
+./gpt loss --model exp4-ext.dat --limit 1
+./gpt infer --model exp4-ext.dat "a"
+
+echo "---------"
+echo "init exp5"
+./gpt init --model exp5.dat --tokenizer ascii --positional-encoding absolute --embedding-degree 144 --num-layers 6 --num-heads 6 1> mute
+./gpt train --model exp5.dat --dropout 0.1 --steps 500 1> mute
+echo loss
+./gpt loss --model exp5.dat --limit 1
+./gpt infer --model exp5.dat "a"
+
+echo "exp5-ext"
+./gpt insert-layer --input exp5.dat --output exp5-ext.dat --insert-at 3
+./gpt train --model exp5-ext.dat --dropout 0.1 --steps 200 1> mute
+echo loss
+./gpt loss --model exp5-ext.dat --limit 1
+./gpt infer --model exp5-ext.dat "a"
+
+echo "---------"
+echo "init exp6"
+./gpt init --model exp6.dat --tokenizer ascii --positional-encoding absolute --embedding-degree 144 --num-layers 6 --num-heads 6 1> mute
+./gpt train --model exp6.dat --dropout 0.1 --steps 500 1> mute
+echo loss
+./gpt loss --model exp6.dat --limit 1
+./gpt infer --model exp6.dat "a"
+
+echo "exp6-ext"
+./gpt insert-layer --input exp6.dat --output exp6-ext.dat --insert-at 3
+./gpt train --model exp6-ext.dat --dropout 0.1 --steps 200 1> mute
+echo loss
+./gpt loss --model exp6-ext.dat --limit 1
+./gpt infer --model exp6-ext.dat "a"
+```
+
+# 30. Comparing positional encoding 2
+
+It's like #29, but with `python3 dummy_data/simple_dummy2.py > dataset.txt`.
+
+I prompted them with `"acbafbe3"`, whose answer is `"gih;\n"`
+
+1. (144, 6, 6, none, 500)
+  - loss: 1.8017
+  - output: `acbafbe3gkh;\n`
+2. (144, 7, 6, none, 700)
+  - inserted a layer to #1 (layer-3), and trained 200 more steps
+  - loss: 1.7795
+  - output: `acbafbe3iih;\n`
+3. (144, 6, 6, none, 500)
+  - loss: 1.7824
+  - output: `acbafbe3kkk;\n`
+4. (144, 7, 6, none, 700)
+  - inserted a layer to #3 (layer-3), and trained 200 more steps
+  - loss: 1.7534
+  - output: `acbafbe3hkh;\n`
+5. (144, 6, 6, none, 500)
+  - loss: 1.7750
+  - output: `acbafbe3gh;\n`
+6. (144, 7, 6, none, 700)
+  - inserted a layer to #5 (layer-3), and trained 200 more steps
+  - loss: 1.7538
+  - output: `acbafbe3khi;\n`
+7. (144, 6, 6, absolute, 500)
+  - loss: 2.7156
+  - output: `acbafbe3aecea...` (followed be a sequence of meaningless alphabets)
+8. (144, 7, 6, absolute, 700)
+  - inserted a layer to #7 (layer-3), and trained 200 more steps
+  - loss: 2.7092
+  - output: `acbafbe3cfafb...` (followed by a sequence of meaningless alphabets)
+9. (144, 6, 6, absolute, 500)
+  - loss: 2.2187
+  - output: `acbafbe3;\n`
+10. (144, 7, 6, absolute, 700)
+  - inserted a layer to #9 (layer-3), and trained 200 more steps
+  - loss: 2.2058
+  - output: `acbafbe3\n`
+11. (144, 6, 6, absolute, 500)
+  - loss: 2.7286
+  - output: `acbafbe3fdfff...` (followed by a sequence of meaningless alphabets)
+12. (144, 7, 6, absolute, 700)
+  - inserted a layer to #11 (layer-3), and trained 200 more steps
+  - loss: 2.7123
+  - output: `acbafbe3affcf...` (followed by a sequence of meaningless alphabets)
+
+Removing PE is always better...
