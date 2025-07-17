@@ -1,0 +1,18 @@
+gpt-train(1)
+==========
+
+NAME
+----
+gpt-train - Train a femtoGPT model
+
+SYNOPSIS
+--------
+[verse]
+'gpt train' [--model <model=model.dat>] [--dataset <dataset=dataset.txt>]
+            [--dropout <n=0>] [--steps <n=100000>] [--reset-optimizer]
+
+DESCRIPTION
+-----------
+
+OPTIONS
+-------

@@ -1,0 +1,19 @@
+gpt-count-tokens(1)
+==========
+
+NAME
+----
+gpt-count-tokens - Count tokens in a dataset
+
+SYNOPSIS
+--------
+[verse]
+'gpt count-tokens' [--model <path=tokenizer.json>] [--dataset <path=dataset.txt>]
+
+DESCRIPTION
+-----------
+`--model` can be an output of `train-bpe` command or a model file made from
+`init` command.
+
+OPTIONS
+-------

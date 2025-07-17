@@ -1,0 +1,29 @@
+gpt-init(1)
+==========
+
+NAME
+----
+gpt-init - Initialize a femtoGPT model
+
+SYNOPSIS
+--------
+[verse]
+'gpt init' --interactive | -i
+'gpt init' [--model <model=model.dat>] [--tokenizer <ascii | char | bpe>]
+            [--tokenizer-data <path>] [--reserve-tokens <n=0>]
+            [--positional-encoding <absolute | none>]
+            [--num-tokens <n=80>] [--embedding-degree <n=80>]
+            [--num-layers <n=4>] [--num-heads <n=4>]
+
+DESCRIPTION
+-----------
+In `--interactive` mode, all the other options are ignored.
+
+If the `--tokenizer` is `char`, `--tokenizer-data` is default to `dataset.txt`.
+If it's `bpe`, `--tokenizer-data` is default to `tokenizer.json`. The tokenizer
+data can either be an output of `train-bpe` command or simply an array of
+strings. You can manually create an array of strings (tokens) and feed it to
+this command.
+
+OPTIONS
+-------

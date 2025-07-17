@@ -1,0 +1,26 @@
+gpt-train-bpe(1)
+==========
+
+NAME
+----
+gpt-train-bpe - Train a bpe tokenizer
+
+SYNOPSIS
+--------
+[verse]
+'gpt train-bpe' [--dataset <path=dataset.txt>] [--reserve-tokens <n=0>]
+            [--tokenizer-data <path=tokenizer.json>] [--vocab-size <n=768>]
+
+DESCRIPTION
+-----------
+You can train a tokenizer from a text file (or files). The result is saved to
+`--tokenizer-data`. You can later feed it to `init` command.
+
+If `--reserve-tokens` is set, it adds unused tokens to the dictionary. You can
+later add tokens to a trained model by replacing reserved tokens with the
+tokens that you want.
+
+The size of the final dictionary is `--vocab-size` + `--reserve-tokens`.
+
+OPTIONS
+-------

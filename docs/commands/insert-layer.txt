@@ -1,0 +1,19 @@
+gpt-insert-layer(1)
+==========
+
+NAME
+----
+gpt-insert-layer - Insert a layer to an existing model
+
+SYNOPSIS
+--------
+[verse]
+'gpt insert-layer' [--input <path=model.dat>] [--output <path=inserted.dat>]
+            [--insert-at <n=1>]
+
+DESCRIPTION
+-----------
+
+
+OPTIONS
+-------

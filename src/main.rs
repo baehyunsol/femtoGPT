@@ -87,6 +87,11 @@ fn run() -> Result<(), Error> {
                 .args(ArgType::Path, ArgCount::None)
                 .parse(&args, 2)?;
 
+            if parsed_args.show_help() {
+                println!("{}", include_str!("../docs/commands/init.txt"));
+                return Ok(());
+            }
+
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
             let mut tokenizer = parsed_args.arg_flags.get("--tokenizer").unwrap().to_string();
             let reserve_tokens = parsed_args.arg_flags.get("--reserve-tokens").unwrap().parse().unwrap();
@@ -253,6 +258,11 @@ fn run() -> Result<(), Error> {
                 .args(ArgType::String, ArgCount::Exact(1))
                 .parse(&args, 2)?;
 
+            if parsed_args.show_help() {
+                println!("{}", include_str!("../docs/commands/infer.txt"));
+                return Ok(());
+            }
+
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
             let count = parsed_args.arg_flags.get("--count").unwrap().parse::<usize>().unwrap();
             let temperature = parsed_args.arg_flags.get("--temperature").unwrap().parse::<f32>().unwrap();
@@ -321,6 +331,11 @@ fn run() -> Result<(), Error> {
                 .optional_flag(&["--reset-optimizer"])
                 .args(ArgType::Path, ArgCount::None)
                 .parse(&args, 2)?;
+
+            if parsed_args.show_help() {
+                println!("{}", include_str!("../docs/commands/train.txt"));
+                return Ok(());
+            }
 
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
             let dataset_path = parsed_args.arg_flags.get("--dataset").unwrap().to_string();
@@ -480,6 +495,11 @@ fn run() -> Result<(), Error> {
                 .args(ArgType::Path, ArgCount::None)
                 .parse(&args, 2)?;
 
+            if parsed_args.show_help() {
+                println!("{}", include_str!("../docs/commands/train-bpe.txt"));
+                return Ok(());
+            }
+
             let dataset = parsed_args.arg_flags.get("--dataset").unwrap().to_string();
             let tokenizer_data = parsed_args.arg_flags.get("--tokenizer-data").unwrap().to_string();
             let reserve_tokens = parsed_args.arg_flags.get("--reserve-tokens").unwrap().parse().unwrap();
@@ -535,6 +555,11 @@ fn run() -> Result<(), Error> {
                 .args(ArgType::Path, ArgCount::None)
                 .parse(&args, 2)?;
 
+            if parsed_args.show_help() {
+                println!("{}", include_str!("../docs/commands/count-tokens.txt"));
+                return Ok(());
+            }
+
             let model = parsed_args.arg_flags.get("--model").unwrap().to_string();
             let dataset = parsed_args.arg_flags.get("--dataset").unwrap().to_string();
 
@@ -569,6 +594,11 @@ fn run() -> Result<(), Error> {
                 .args(ArgType::Path, ArgCount::None)
                 .parse(&args, 2)?;
 
+            if parsed_args.show_help() {
+                println!("{}", include_str!("../docs/commands/loss.txt"));
+                return Ok(());
+            }
+
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
             let bytes = read_bytes(&model_path)?;
             let model: Model = bincode::deserialize(&bytes)?;
@@ -593,6 +623,11 @@ fn run() -> Result<(), Error> {
                 .arg_flag_with_default("--model", "model.dat", ArgType::Path)
                 .args(ArgType::Path, ArgCount::None)
                 .parse(&args, 2)?;
+
+            if parsed_args.show_help() {
+                println!("{}", include_str!("../docs/commands/info.txt"));
+                return Ok(());
+            }
 
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
             let bytes = read_bytes(&model_path)?;
@@ -662,6 +697,11 @@ fn run() -> Result<(), Error> {
                 .arg_flag_with_default("--limit", "10", ArgType::IntegerBetween { min: Some(1), max: None })
                 .args(ArgType::Path, ArgCount::Exact(2))
                 .parse(&args, 2)?;
+
+            if parsed_args.show_help() {
+                println!("{}", include_str!("../docs/commands/compare.txt"));
+                return Ok(());
+            }
 
             let model_paths = parsed_args.get_args_exact(2)?;
             let reverse = parsed_args.get_flag(0).is_some();
@@ -796,6 +836,11 @@ fn run() -> Result<(), Error> {
                 .args(ArgType::Path, ArgCount::None)
                 .parse(&args, 2)?;
 
+            if parsed_args.show_help() {
+                println!("{}", include_str!("../docs/commands/cluster-tokens.txt"));
+                return Ok(());
+            }
+
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
             let bytes = read_bytes(&model_path)?;
             let model: Model = bincode::deserialize(&bytes).unwrap();
@@ -853,6 +898,11 @@ fn run() -> Result<(), Error> {
                 .arg_flag_with_default("--insert-at", "1", ArgType::IntegerBetween { min: Some(0), max: None })
                 .args(ArgType::Path, ArgCount::None)
                 .parse(&args, 2)?;
+
+            if parsed_args.show_help() {
+                println!("{}", include_str!("../docs/commands/insert-layer.txt"));
+                return Ok(());
+            }
 
             let input_path = parsed_args.arg_flags.get("--input").unwrap().to_string();
             let output_path = parsed_args.arg_flags.get("--output").unwrap().to_string();
