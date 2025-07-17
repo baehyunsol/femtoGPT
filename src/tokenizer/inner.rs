@@ -1,11 +1,14 @@
-use super::{BpeConfig, CharCount, TokenId};
+use super::{
+    BpeConfig,
+    CharCount,
+    TokenId,
+    count_tokens,
+    generate_reserved_token,
+};
 use super::config::Unit;
 use crate::error::Error;
 use ragit_fs::{
     WriteMode,
-    is_dir,
-    read_bytes,
-    read_dir,
     write_string,
 };
 use serde::{Deserialize, Serialize};
@@ -231,24 +234,7 @@ impl TokenizerInner {
         dump_result_to: Option<String>,
     ) -> Result<(), Error> {
         if self.tokens.len() > config.vocab_size {
-            let state_machine = self.build_state_machine();
-            let mut counts = self.tokens.keys().map(|token_id| (*token_id, 0)).collect::<HashMap<TokenId, u64>>();
-            let files = if is_dir(dataset) {
-                read_dir(dataset, false)?
-            } else {
-                vec![dataset.to_string()]
-            };
-
-            for file in files.iter() {
-                let token_ids = self.encode_with_state_machine(&read_bytes(file)?, &state_machine);
-
-                for token_id in token_ids.iter() {
-                    match counts.get_mut(token_id) {
-                        Some(n) => { *n += 1; },
-                        None => { counts.insert(*token_id, 1); },
-                    }
-                }
-            }
+            let counts = count_tokens(&self, dataset)?;
 
             let mut counts = counts.into_iter().collect::<Vec<_>>();
             counts.sort_by_key(|(_, c)| u64::MAX - *c);
@@ -298,6 +284,17 @@ impl TokenizerInner {
         }
 
         Ok(())
+    }
+
+    pub fn reserve_tokens(&mut self, count: usize) {
+        self.compact();
+
+        for i in 0..count {
+            let token = generate_reserved_token();
+            self.tokens.insert(TokenId::MAX - i, token.as_bytes().to_vec());
+        }
+
+        self.compact();
     }
 
     fn create_new_token(&mut self, id1: TokenId, id2: TokenId) -> TokenId {

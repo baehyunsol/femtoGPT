@@ -1,13 +1,18 @@
-mod char_count;
+mod count;
 mod config;
 mod encode;
 mod inner;
+mod reserve;
 
 use encode::StateMachine;
 
-pub use char_count::{CharCount, count_chars};
-pub use config::BpeConfig;
+pub use count::{CharCount, count_chars, count_tokens};
+pub use config::{BpeConfig, Unit};
 pub use inner::TokenizerInner;
+pub use reserve::{
+    generate_reserved_token,
+    is_reserved_token,
+};
 
 pub type TokenId = usize;
 
@@ -45,5 +50,10 @@ impl Tokenizer {
     pub fn from_tokens(tokens: Vec<String>) -> Self {
         let inner = TokenizerInner::from_tokens(tokens);
         Self::from_inner(inner)
+    }
+
+    pub fn reserve_tokens(&mut self, count: usize) {
+        self.inner.reserve_tokens(count);
+        self.state_machine = self.inner.build_state_machine();
     }
 }

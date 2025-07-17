@@ -16,6 +16,7 @@ use femto_gpt::tokenizer::{
     TokenizerInner,
     Tokenizer,
     count_chars,
+    count_tokens,
 };
 use ragit_cli::{
     ArgCount,
@@ -34,6 +35,7 @@ use ragit_fs::{
     write_string,
 };
 use rand::seq::SliceRandom;
+use serde_json::{Map, Value};
 use std::collections::HashMap;
 use std::io::Write;
 
@@ -74,8 +76,9 @@ fn run() -> Result<(), Error> {
                 .arg_flag_with_default("--model", "model.dat", ArgType::Path)
                 // TODO: `ArgType::Enum("ascii", "char", "bpe")`
                 .arg_flag_with_default("--tokenizer", "ascii", ArgType::String)
-                .arg_flag_with_default("--positional-encoding", "absolute", ArgType::String)
                 .optional_arg_flag("--tokenizer-data", ArgType::Path)
+                .arg_flag_with_default("--reserve-tokens", "0", ArgType::IntegerBetween { min: Some(0), max: None })
+                .arg_flag_with_default("--positional-encoding", "absolute", ArgType::String)
                 .arg_flag_with_default("--num-tokens", "80", ArgType::IntegerBetween { min: Some(0), max: None })
                 .arg_flag_with_default("--embedding-degree", "80", ArgType::IntegerBetween { min: Some(0), max: None })
                 .arg_flag_with_default("--num-layers", "4", ArgType::IntegerBetween { min: Some(0), max: None })
@@ -86,6 +89,7 @@ fn run() -> Result<(), Error> {
 
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
             let mut tokenizer = parsed_args.arg_flags.get("--tokenizer").unwrap().to_string();
+            let reserve_tokens = parsed_args.arg_flags.get("--reserve-tokens").unwrap().parse().unwrap();
             let mut pos_enc = parsed_args.arg_flags.get("--positional-encoding").unwrap().to_string();
             let mut tokenizer_data = match parsed_args.arg_flags.get("--tokenizer-data") {
                 Some(tokenizer_data) => tokenizer_data.to_string(),
@@ -168,13 +172,13 @@ fn run() -> Result<(), Error> {
 
             let mut rng = rand::thread_rng();
 
-            let tokenizer = match tokenizer.as_str() {
+            let mut tokenizer = match tokenizer.as_str() {
                 "ascii" => Tokenizer::ascii(),
                 "char" => {
                     let mut config = BpeConfig::default();
                     config.vocab_size = 2048;
                     config.char_vocab_size = Some(2048);
-                    let char_count = count_chars(&tokenizer_data, &config)?;
+                    let char_count = count_chars(&tokenizer_data, config.unit)?;
                     Tokenizer::from_inner(TokenizerInner::from_char_count(&char_count, &config))
                 },
                 "bpe" => {
@@ -190,6 +194,10 @@ fn run() -> Result<(), Error> {
                     panic!("{t:?} is not a valid tokenizer.");
                 },
             };
+
+            if reserve_tokens > 0 {
+                tokenizer.reserve_tokens(reserve_tokens);
+            }
 
             let pos_enc = pos_enc.parse()?;
             let vocab_size = tokenizer.vocab_size();
@@ -467,22 +475,24 @@ fn run() -> Result<(), Error> {
             let parsed_args = ArgParser::new()
                 .arg_flag_with_default("--dataset", "dataset.txt", ArgType::Path)
                 .arg_flag_with_default("--tokenizer-data", "tokenizer.json", ArgType::Path)
-                .arg_flag_with_default("--vocab-size", "768", ArgType::IntegerBetween { min: Some(600), max: None })
-                .arg_flag_with_default("--epoch", "50", ArgType::IntegerBetween { min: Some(1), max: None})
+                .arg_flag_with_default("--reserve-tokens", "0", ArgType::IntegerBetween { min: Some(0), max: None })
+                .arg_flag_with_default("--vocab-size", "768", ArgType::IntegerBetween { min: Some(256), max: None })
                 .args(ArgType::Path, ArgCount::None)
                 .parse(&args, 2)?;
 
             let dataset = parsed_args.arg_flags.get("--dataset").unwrap().to_string();
             let tokenizer_data = parsed_args.arg_flags.get("--tokenizer-data").unwrap().to_string();
+            let reserve_tokens = parsed_args.arg_flags.get("--reserve-tokens").unwrap().parse().unwrap();
             let vocab_size = parsed_args.arg_flags.get("--vocab-size").unwrap().parse::<usize>().unwrap();
-            let epoch = parsed_args.arg_flags.get("--epoch").unwrap().parse::<usize>().unwrap();
+            let epoch = (vocab_size / 10).max(5) + 1;
 
             let mut config = BpeConfig::default();
             config.vocab_size = vocab_size;
-            let char_count = count_chars(&dataset, &config)?;
+            config.char_vocab_size = Some(vocab_size / 2);
+            let char_count = count_chars(&dataset, config.unit)?;
             let mut tokenizer = TokenizerInner::from_char_count(&char_count, &config);
 
-            let max_corpus_size = 1 << 20;
+            let max_corpus_size = 1 << 24;
 
             for i in 0..epoch {
                 let corpus = if is_dir(&dataset) {
@@ -498,15 +508,58 @@ fn run() -> Result<(), Error> {
 
                 tokenizer.compact();
                 println!("Vocab-size: {} tokens", tokenizer.len());
-                println!("Saving the tokenizer...");
-                let t_s = serde_json::to_string_pretty(&tokenizer).unwrap();
-                write_string(
-                    &tokenizer_data,
-                    &t_s,
-                    WriteMode::CreateOrTruncate,
-                )?;
             }
 
+            tokenizer.trim_tail(&dataset, &config, None)?;
+
+            if reserve_tokens > 0 {
+                tokenizer.reserve_tokens(reserve_tokens);
+            }
+
+            println!("Saving the tokenizer...");
+            let t_s = serde_json::to_string_pretty(&tokenizer).unwrap();
+            write_string(
+                &tokenizer_data,
+                &t_s,
+                WriteMode::CreateOrTruncate,
+            )?;
+
+            Ok(())
+        },
+        Some("count-tokens") => {
+            let parsed_args = ArgParser::new()
+                // It can be a model file or a tokenizer file. The program will
+                // detect the file type.
+                .arg_flag_with_default("--model", "tokenizer.json", ArgType::Path)
+                .arg_flag_with_default("--dataset", "dataset.txt", ArgType::Path)
+                .args(ArgType::Path, ArgCount::None)
+                .parse(&args, 2)?;
+
+            let model = parsed_args.arg_flags.get("--model").unwrap().to_string();
+            let dataset = parsed_args.arg_flags.get("--dataset").unwrap().to_string();
+
+            let tokenizer = match read_string(&model) {
+                Ok(s) => serde_json::from_str::<TokenizerInner>(&s)?,
+                Err(_) => {
+                    let bytes = read_bytes(&model)?;
+                    let model: Model = bincode::deserialize(&bytes)?;
+                    model.tokenizer
+                },
+            };
+
+            let counted = count_tokens(&tokenizer, &dataset)?;
+            let mut counted = counted.into_iter().collect::<Vec<_>>();
+            counted.sort_by_key(|(_, count)| u64::MAX - *count);
+
+            let counted = counted.into_iter().enumerate().map(
+                |(i, (id, count))| vec![
+                    (String::from("rank"), Value::from(i)),
+                    (String::from("id"), Value::from(id)),
+                    (String::from("token"), Value::from(tokenizer.decode_id(id))),
+                    (String::from("count"), Value::from(count)),
+                ].into_iter().collect::<Map<_, _>>()
+            ).collect::<Vec<_>>();
+            println!("{}", serde_json::to_string_pretty(&counted)?);
             Ok(())
         },
         Some("loss") => {
