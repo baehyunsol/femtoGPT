@@ -1,6 +1,6 @@
 use crate::funcs::*;
 use crate::graph::{Graph, GraphError, TensorId};
-use crate::model::{Log, PositionalEncoding};
+use crate::model::{Log, PosEnc};
 use crate::optimizer::{Optimizer, OptimizerState};
 use crate::tensor::{GeneralTensor, Tensor, TensorError, TensorOps};
 use rand::Rng;
@@ -25,7 +25,7 @@ pub struct GPT<G: Graph> {
     loss: TensorId,
     pos_input_fixed: Tensor<f32>,
     pub logs: Vec<Log>,
-    pub positional_encoding: PositionalEncoding,
+    pub pos_enc: PosEnc,
 }
 
 fn sample_dataset<R: Rng>(
@@ -116,7 +116,7 @@ impl<G: Graph> GPT<G> {
         head_size: usize,
         dropout: f32,
         logs: Vec<Log>,
-        positional_encoding: PositionalEncoding,
+        pos_enc: PosEnc,
     ) -> Result<Self, GraphError> {
         // Mapping each token to a `embedding_degree` dimension space through a lookup table
         let token_embedding = g.alloc(
@@ -161,9 +161,10 @@ impl<G: Graph> GPT<G> {
             "pos_input".into(),
         )?;
 
-        // Positional+Token information will both reside in a single `embedding_degree` dimension
-        // vector.
-        let inp = g.call(Add::new(), &[embedded_token_input, pos_input])?;
+        let inp = match pos_enc {
+            PosEnc::None => embedded_token_input,
+            PosEnc::Absolute => g.call(Add::new(), &[embedded_token_input, pos_input])?,
+        };
 
         let mut curr_inp = inp;
         for l in 0..num_layers {
@@ -182,6 +183,8 @@ impl<G: Graph> GPT<G> {
 
             let mut heads = Vec::new();
 
+            // TODO: Why are some MatMuls reversed?
+            //       k should be rotated_k_params @ norm_input... isn't it?
             // Multi-head Attention
             for h in 0..num_heads {
                 // Key
@@ -315,10 +318,11 @@ impl<G: Graph> GPT<G> {
         let output = g.call(Add::new(), &[result_lin, to_vocab_bias])?;
 
         let loss = g.call(CrossEntropy::new(), &[output, expected_output])?;
-        let pos_input_fixed = match positional_encoding {
-            PositionalEncoding::None => Tensor::zeros(&[num_tokens, embedding_degree]),
-            PositionalEncoding::Sinusoidal => pos_encode_inter(num_tokens, embedding_degree),
-            PositionalEncoding::Rotary => todo!(),
+        let pos_input_fixed = match pos_enc {
+            PosEnc::None => Tensor::zeros(&[num_tokens, embedding_degree]),
+            PosEnc::Absolute => pos_encode_inter(num_tokens, embedding_degree),
+            // PosEnc::AbsoluteCat => pos_encode_inter(num_tokens, embedding_degree),
+            // PosEnc::Rotary => todo!(),
         };
 
         Ok(Self {
@@ -331,7 +335,7 @@ impl<G: Graph> GPT<G> {
             loss,
             logs,
             pos_input_fixed,
-            positional_encoding,
+            pos_enc,
         })
     }
 

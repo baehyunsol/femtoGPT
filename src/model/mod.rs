@@ -13,27 +13,39 @@ pub use log::{Log, LogKind};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Model {
     pub tokenizer: TokenizerInner,
-    pub positional_encoding: PositionalEncoding,
+    pub pos_enc: PosEnc,
     pub hyperparameters: Hyperparameters,
     pub training_state: TrainingState,
     pub logs: Vec<Log>,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Serialize, PartialEq)]
-pub enum PositionalEncoding {
+pub enum PosEnc {
     None,
-    Sinusoidal,
-    Rotary,
+
+    // sinusoidal positional encoding, proposed by "Attention Is All You Need"
+    Absolute,
+
+    // TODO
+    // It concats sinusoidal positional encoding to an embedding vector.
+    // Now that the vector has `embedding_degree * 2` dimension, it mat-muls the
+    // vector with `[embedding_degree * 2, embedding_degree]` matrix to make it
+    // compatible with the other layers.
+    // AbsoluteCat,
+
+    // TODO
+    // Rotary,
 }
 
-impl FromStr for PositionalEncoding {
+impl FromStr for PosEnc {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
         match s {
             "none" => Ok(Self::None),
-            "sinusoidal" => Ok(Self::Sinusoidal),
-            "rotary" => Ok(Self::Rotary),
+            "absolute" => Ok(Self::Absolute),
+            // "absolute-cat" => Ok(Self::AbsoluteCat),
+            // "rotary" => Ok(Self::Rotary),
             _ => todo!(),
         }
     }

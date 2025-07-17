@@ -74,7 +74,7 @@ fn run() -> Result<(), Error> {
                 .arg_flag_with_default("--model", "model.dat", ArgType::Path)
                 // TODO: `ArgType::Enum("ascii", "char", "bpe")`
                 .arg_flag_with_default("--tokenizer", "ascii", ArgType::String)
-                .arg_flag_with_default("--positional-encoding", "sinusoidal", ArgType::String)
+                .arg_flag_with_default("--positional-encoding", "absolute", ArgType::String)
                 .optional_arg_flag("--tokenizer-data", ArgType::Path)
                 .arg_flag_with_default("--num-tokens", "80", ArgType::IntegerBetween { min: Some(0), max: None })
                 .arg_flag_with_default("--embedding-degree", "80", ArgType::IntegerBetween { min: Some(0), max: None })
@@ -86,7 +86,7 @@ fn run() -> Result<(), Error> {
 
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
             let mut tokenizer = parsed_args.arg_flags.get("--tokenizer").unwrap().to_string();
-            let mut positional_encoding = parsed_args.arg_flags.get("--positional-encoding").unwrap().to_string();
+            let mut pos_enc = parsed_args.arg_flags.get("--positional-encoding").unwrap().to_string();
             let mut tokenizer_data = match parsed_args.arg_flags.get("--tokenizer-data") {
                 Some(tokenizer_data) => tokenizer_data.to_string(),
                 None => match tokenizer.as_str() {
@@ -128,11 +128,11 @@ fn run() -> Result<(), Error> {
                     s = String::new();
                 }
 
-                println!("Select positional encoding: none or sinusoidal (default: sinusoidal)");
+                println!("Select positional encoding: none or absolute (default: absolute)");
                 print!(">>> ");
                 std::io::stdout().flush()?;
                 std::io::stdin().read_line(&mut s)?;
-                positional_encoding = s.trim().to_string();
+                pos_enc = s.trim().to_string();
                 s = String::new();
 
                 println!("Set num tokens (default: 80)");
@@ -191,7 +191,7 @@ fn run() -> Result<(), Error> {
                 },
             };
 
-            let positional_encoding = positional_encoding.parse()?;
+            let pos_enc = pos_enc.parse()?;
             let vocab_size = tokenizer.vocab_size();
 
             let mut gpt = GPT::new(
@@ -206,7 +206,7 @@ fn run() -> Result<(), Error> {
                 head_size,
                 0.0,  // dropout
                 vec![],  // logs
-                positional_encoding,
+                pos_enc,
             )?;
             gpt.sync()?;
             println!("Successfully initialized a model with {} parameters", gpt.num_params());
@@ -222,7 +222,7 @@ fn run() -> Result<(), Error> {
             };
             let model = Model {
                 tokenizer: tokenizer.inner.clone(),
-                positional_encoding,
+                pos_enc,
                 hyperparameters,
                 training_state,
                 logs: vec![Log::init(hyperparameters)],
@@ -282,7 +282,7 @@ fn run() -> Result<(), Error> {
 
                 // Do we have to log inferences?
                 vec![],  // logs
-                model.positional_encoding,
+                model.pos_enc,
             )?;
             println!("Successfully loaded a model with {} parameters", gpt.num_params());
             println!("Vocab-size: {} tokens", vocab_size);
@@ -357,7 +357,7 @@ fn run() -> Result<(), Error> {
                 head_size,
                 dropout,
                 model.logs.clone(),
-                model.positional_encoding,
+                model.pos_enc,
             )?;
 
             println!("Successfully loaded a model with {} parameters", gpt.num_params());
@@ -416,7 +416,7 @@ fn run() -> Result<(), Error> {
                 let training_state = gpt.get_training_state().unwrap();
                 let model = Model {
                     tokenizer: tokenizer.inner.clone(),
-                    positional_encoding: gpt.positional_encoding,
+                    pos_enc: gpt.pos_enc,
                     hyperparameters: Hyperparameters {
                         num_tokens,
                         vocab_size,
@@ -567,7 +567,7 @@ fn run() -> Result<(), Error> {
                 head_size,
                 0.0,  // dropout
                 vec![],  // logs
-                model.positional_encoding,
+                model.pos_enc,
             )?;
 
             let mut info = ModelInfo {
@@ -903,7 +903,7 @@ fn run() -> Result<(), Error> {
                 head_size,
                 0.0,  // dropout
                 vec![],  // logs
-                model.positional_encoding,
+                model.pos_enc,
             )?;
             gpt.sync()?;
             gpt.set_training_state(model.training_state.clone(), false)?;
