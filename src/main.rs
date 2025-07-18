@@ -48,6 +48,7 @@ fn main() {
                     span.1,
                     span.2,
                 ));
+                std::process::exit(1);
             },
             _ => panic!("{e:?}"),
         }
@@ -77,6 +78,7 @@ fn run() -> Result<(), Error> {
                 // TODO: `ArgType::Enum("ascii", "char", "bpe")`
                 .arg_flag_with_default("--tokenizer", "ascii", ArgType::String)
                 .optional_arg_flag("--tokenizer-data", ArgType::Path)
+                .flag_with_default(&["--case-sensitive", "--case-insensitive"])
                 .arg_flag_with_default("--reserve-tokens", "0", ArgType::IntegerBetween { min: Some(0), max: None })
                 .arg_flag_with_default("--positional-encoding", "absolute", ArgType::String)
                 .arg_flag_with_default("--num-tokens", "80", ArgType::IntegerBetween { min: Some(0), max: None })
@@ -96,6 +98,7 @@ fn run() -> Result<(), Error> {
             let mut tokenizer = parsed_args.arg_flags.get("--tokenizer").unwrap().to_string();
             let reserve_tokens = parsed_args.arg_flags.get("--reserve-tokens").unwrap().parse().unwrap();
             let mut pos_enc = parsed_args.arg_flags.get("--positional-encoding").unwrap().to_string();
+            let mut case_sensitive = parsed_args.get_flag(1).unwrap() == "--case-sensitive";
             let mut tokenizer_data = match parsed_args.arg_flags.get("--tokenizer-data") {
                 Some(tokenizer_data) => tokenizer_data.to_string(),
                 None => match tokenizer.as_str() {
@@ -117,6 +120,13 @@ fn run() -> Result<(), Error> {
                 std::io::stdout().flush()?;
                 std::io::stdin().read_line(&mut s)?;
                 tokenizer = s.trim().to_string();
+                s = String::new();
+
+                println!("Case sensitive tokenizer? yes / no");
+                print!(">>> ");
+                std::io::stdout().flush()?;
+                std::io::stdin().read_line(&mut s)?;
+                case_sensitive = s.trim().to_ascii_lowercase().starts_with("y");
                 s = String::new();
 
                 if tokenizer == "char" {
@@ -178,11 +188,12 @@ fn run() -> Result<(), Error> {
             let mut rng = rand::thread_rng();
 
             let mut tokenizer = match tokenizer.as_str() {
-                "ascii" => Tokenizer::ascii(),
+                "ascii" => Tokenizer::ascii(case_sensitive),
                 "char" => {
                     let mut config = BpeConfig::default();
                     config.vocab_size = 2048;
                     config.char_vocab_size = Some(2048);
+                    config.case_sensitive = case_sensitive;
                     let char_count = count_chars(&tokenizer_data, config.unit)?;
                     Tokenizer::from_inner(TokenizerInner::from_char_count(&char_count, &config))
                 },
@@ -191,7 +202,7 @@ fn run() -> Result<(), Error> {
                     let data: serde_json::Value = serde_json::from_str(&data)?;
 
                     match serde_json::from_value::<Vec<String>>(data.clone()) {
-                        Ok(tokens) => Tokenizer::from_tokens(tokens),
+                        Ok(tokens) => Tokenizer::from_tokens(tokens, case_sensitive),
                         Err(_) => Tokenizer::from_inner(serde_json::from_value(data)?),
                     }
                 },
@@ -488,6 +499,7 @@ fn run() -> Result<(), Error> {
         },
         Some("train-bpe") => {
             let parsed_args = ArgParser::new()
+                .flag_with_default(&["--case-sensitive", "--case-insensitive"])
                 .arg_flag_with_default("--dataset", "dataset.txt", ArgType::Path)
                 .arg_flag_with_default("--tokenizer-data", "tokenizer.json", ArgType::Path)
                 .arg_flag_with_default("--reserve-tokens", "0", ArgType::IntegerBetween { min: Some(0), max: None })
@@ -500,6 +512,7 @@ fn run() -> Result<(), Error> {
                 return Ok(());
             }
 
+            let case_sensitive = parsed_args.get_flag(0).unwrap() == "--case-sensitive";
             let dataset = parsed_args.arg_flags.get("--dataset").unwrap().to_string();
             let tokenizer_data = parsed_args.arg_flags.get("--tokenizer-data").unwrap().to_string();
             let reserve_tokens = parsed_args.arg_flags.get("--reserve-tokens").unwrap().parse().unwrap();
@@ -509,6 +522,7 @@ fn run() -> Result<(), Error> {
             let mut config = BpeConfig::default();
             config.vocab_size = vocab_size;
             config.char_vocab_size = Some(vocab_size / 2);
+            config.case_sensitive = case_sensitive;
             let char_count = count_chars(&dataset, config.unit)?;
             let mut tokenizer = TokenizerInner::from_char_count(&char_count, &config);
 
@@ -531,6 +545,7 @@ fn run() -> Result<(), Error> {
             }
 
             tokenizer.trim_tail(&dataset, &config, None)?;
+            tokenizer.compact();
 
             if reserve_tokens > 0 {
                 tokenizer.reserve_tokens(reserve_tokens);

@@ -1,28 +1,30 @@
+NOTE: All the trainings are done on CPU.
+
 # 1. Training a very simple model 1 (success)
 
-- tokenizer: simple (the one in the original repository, now deprecated)
+- tokenizer: simple (the one in the original repository, now deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 64, num layers: 4, num heads 4 (232K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 685, loss: 1.4672, elapsed: 2m 16s (apple M3 pro)
 - data: `python3 dummy_data/simple_dummy.py > dataset.txt`
 
-It can produce a plausible output!!!
+The output looks like the model understood the pattern.
 
 # 2. Training a very simple model 2 (success)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 64, num layers: 4, num heads 4 (232K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
 - step: 629, loss: 1.4760, elapsed: 2m 9s (apple M3 pro)
 - data: `python3 dummy_data/simple_dummy.py > dataset.txt`
 
-It can produce a plausible output!!!
+The output looks like the model understood the pattern.
 
 # 3. Training a very simple model 3 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 64, num layers: 6, num heads 4 (331K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -41,7 +43,7 @@ Why not? The only difference is that the model has more layers than before. Why 
 
 # 4. Training a Rust coder 1 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 64, num layers: 6, num heads 4 (331K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -52,7 +54,7 @@ It doesn't work at all! I guess I need a bigger model
 
 # 5. Training a Rust coder 2 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 256, num layers: 8, num heads 8 (6.4M params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -65,7 +67,7 @@ It takes too long to converge. I'll continue on this later.
 
 # 6. Training a Rust coder 3 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 64, num layers: 4, num heads 4 (232K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -78,7 +80,7 @@ Looking at its log_probs: `[(' ', 88.8%), ('}', 0.9%), ('l', 0.8%), ('i', 0.7%),
 
 # 7. Training an addition model 1 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 64, num layers: 4, num heads 4 (232K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -106,7 +108,7 @@ It isn't that bad for this small model. Let's try again with a bigger one.
 
 # 8. Training an addition model 2 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 64, num layers: 6, num heads 4 (331K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -131,7 +133,7 @@ It isn't that different from #7.
 
 # 9. Training a very simple model 4 (success)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 80, num layers: 6, num heads 4 (506K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -142,7 +144,7 @@ I just figured out why I have failed #3. It's because larger models take longer 
 
 # 10. Training a very simple model 5 (success)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 32, num layers: 4, num heads 2 (67K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -153,7 +155,7 @@ I wanted to see if even smaller models can be trained on this data. And it works
 
 # 11. Training an English model 1 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 128, num layers: 6, num heads: 8 (1.2M params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -167,7 +169,7 @@ I only had a few minutes and it's not enough to train this size of model. I have
 
 # 12. Training an English model 2 (fail)
 
-- tokenizer: bpe (50 epochs, 566 tokens)
+- tokenizer: bpe (50 epochs, 566 tokens), case sensitive
 - positional encoding: absolute
 - embedding degree: 160, num layers: 8, num heads: 8 (2.6M params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -181,7 +183,7 @@ I just wanted to test the new bpe tokenizer. I guess I have to increase the voca
 
 # 13. Training a very large model (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
   - It doesn't matter, though
 - positional encoding: absolute
 - embedding degree: 640, num layers: 8, num heads: 16 (39.7M parameters)
@@ -195,7 +197,7 @@ The first step was fine, it consumed about 10 GiB of RAM, when `num_tokens` is 8
 
 # 14. Training a very large model (fail)
 
-- tokenizer: bpe (1054 tokens)
+- tokenizer: bpe (1054 tokens), case sensitive
 - positional encoding: absolute
 - embedding degree: 768, num layers: 8, num heads: 16 (58.3M parameters)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -228,7 +230,7 @@ nohup cargo run --release -- train --dropout=0.1 &
 
 # 15. Training an addition model 3 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 160, num layers: 6, num heads: 8 (1.9M parameters)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -243,7 +245,7 @@ I don't understand. I just want it to generate lines that *look like* additions,
 
 # 16. Training an addition model 4 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 160, num layers: 6, num heads: 8 (1.9M parameters)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -255,7 +257,7 @@ I was curious whether setting dropout to 0.1 might change something. It didn't.
 
 # 17. Training an addition model 5 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 80, num layers 4, num heads: 4 (351K parameters)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -284,7 +286,7 @@ It converged much faster than #15 and #16, though. Maybe #15 would converge if I
 
 # 18. Training a Rust coder 4 (fail)
 
-- tokenizer: bpe (1054 tokens)
+- tokenizer: bpe (1054 tokens), case sensitive
 - positional encoding: absolute
 - embedding: 80, num layers: 4, num heads: 4 (480K parameters)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -296,7 +298,7 @@ It might converge someday. I'll try a bit larger model with the same dataset bef
 
 # 19. Training a Rust coder 5 (fail)
 
-- tokenizer: bpe (1054 tokens)
+- tokenizer: bpe (1054 tokens), case sensitive
 - positional encoding: absolute
 - embedding degree: 192, num layers: 8, num heads: 8 (3.9M parameters)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -308,7 +310,7 @@ It's using 3~5 GiB of RAM, when `num_tokens` is 80.
 
 # 20. Training a simple model 1
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 80, num layers: 4, num heads 4 (351K params)
 - dropout: 0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -336,7 +338,7 @@ I'll mark it "success" if all the action's correct rates are greater than 70%
 
 # 21. Training a simple model 2 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 96, num layers: 6, num heads 4 (718K params)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -361,7 +363,7 @@ Evaluation
 
 # 22. Training a simple model 3 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 144, num layers: 6, num heads 6 (1.5M params)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -375,7 +377,7 @@ It seems like it's stuck at a wrong local optima. It's not smart enough to run t
 
 # 23. Training a simple model 4 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 144, num layers: 6, num heads 6 (1.5M params)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -398,7 +400,7 @@ I forgot to add the evaluation result, but it was worse than #21.
 
 # 24. Training a simple model 5 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 96, num layers: 8, num heads 4 (942K params)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -432,7 +434,7 @@ This is the first-ever model to understand an action other than 0 or 9.
 
 # 25. Training a simple model 6 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 144, num layers: 8, num heads 6 (2M params)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -444,7 +446,7 @@ This is the first-ever model to understand an action other than 0 or 9.
 
 # 26. Training a simple model 7 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 144, num layers: 8, num heads 6 (2M params)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -458,7 +460,7 @@ We have lost Euler.
 
 # 27. Training a simple model 8 (fail)
 
-- tokenizer: byte
+- tokenizer: byte (deprecated), case sensitive
 - positional encoding: absolute
 - embedding degree: 64, num layers: 4, num heads 4 (232K params)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -486,7 +488,7 @@ It's much smaller than #20 ~ #26, but does better than them. The lesson is that 
 
 # 28. Training a Rust coder 6 (failed)
 
-- tokenizer: bpe (630 tokens)
+- tokenizer: bpe (630 tokens), case sensitive
 - positional encoding: absolute
 - embedding degree: 192, num layers: 8, num heads: 8 (3.7M parameters)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -991,7 +993,7 @@ Removing PE is always better...
 
 # 31. Training an English model 1
 
-- tokenizer: bpe (???? tokens)
+- tokenizer: bpe (1024 tokens, 64 reserved tokens), case sensitive
 - positional encoding: none
 - embedding degree: 256, num layers: 8, num heads 8 (???M params)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
@@ -1071,3 +1073,48 @@ cargo run --release -- insert-layer --input exp4.dat --output exp4-ext2.dat --in
 cargo run --release -- train --model exp4-ext2.dat --dropout 0.1 --steps 3001
 cp exp4-ext2.dat exp4-ext2-chk001.dat
 ```
+
+- `exp1-chk001.dat`, `exp2-chk001.dat`, `exp3-chk001.dat`, `exp4-chk001.dat`: loss 6.4
+- `exp1-chk002.dat`: loss 6.4
+
+comparison between exp1-chk001 and exp1-chk002
+
+```
+exp1-chk001.dat is parent of exp1-chk002.dat.
+exp1-chk002.dat is 5001-steps further trained version of exp1-chk001.dat
+key: head_norm_coeff, cosine: 0.749735
+key: atten_norm_7_coeff, cosine: 0.906037
+key: feedforward2_7_weights, cosine: 0.908405
+key: feedforward2_7_bias, cosine: 0.933107
+key: head_norm_bias, cosine: 0.939939
+key: feedforward1_7_weights, cosine: 0.952833
+key: proj_7_weights, cosine: 0.956272
+key: head_map_weights, cosine: 0.957193
+key: atten_norm_7_bias, cosine: 0.962747
+key: feedforward1_7_bias, cosine: 0.979152
+key: norm_7_bias, cosine: 0.982568
+key: head_map_bias, cosine: 0.987208
+key: proj_7_bias, cosine: 0.988728
+key: head_7_5_v, cosine: 0.990407
+key: head_7_7_v, cosine: 0.991554
+token_id: 756, token: "qu", head: 5, cosine: 1.000000
+token_id: 1057, token: "engine", head: 0, cosine: 1.000000
+token_id: 756, token: "qu", head: 0, cosine: 1.000000
+token_id: 401, token: "projec", head: 0, cosine: 1.000000
+token_id: 517, token: "mar", head: 0, cosine: 1.000000
+token_id: 77, token: "are", head: 5, cosine: 1.000000
+token_id: 255, token: "se", head: 5, cosine: 1.000000
+token_id: 793, token: "compil", head: 5, cosine: 1.000000
+token_id: 595, token: "provi", head: 0, cosine: 1.000000
+token_id: 560, token: "bra", head: 0, cosine: 1.000000
+token_id: 491, token: "g", head: 5, cosine: 1.000000
+token_id: 793, token: "compil", head: 0, cosine: 1.000000
+token_id: 900, token: "lar", head: 0, cosine: 1.000000
+token_id: 448, token: "inte", head: 5, cosine: 1.000000
+token_id: 565, token: "ver", head: 5, cosine: 1.000000
+```
+
+This is very, very strange. I mean, it's not what I've expected. For 5000 steps, token embeddings have not changed at all (99.9999%). `head_norm` and layer-7 changed, but it's much smaller than what I've seen in #28. There are 2 possible explanations.
+
+1. The model is almost complete. When `head_norm` and layer-7 converge, the model will become smart and generate valid outputs.
+2. The size of the model (6.8M parameters) is too small to understand English. It'll converge, but will never generate something useful.

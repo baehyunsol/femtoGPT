@@ -10,7 +10,7 @@ pub enum Unit {
 pub struct BpeConfig {
     pub unit: Unit,
     pub unk_token: String,
-
+    pub case_sensitive: bool,
     pub vocab_size: usize,
 
     // It affects the initial dictionary build from `CharCount`.
@@ -24,6 +24,7 @@ impl Default for BpeConfig {
         BpeConfig {
             unit: Unit::Char,
             unk_token: String::from("<unk>"),
+            case_sensitive: true,
             vocab_size: 768,
             char_vocab_size: Some(512),
         }

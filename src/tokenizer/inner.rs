@@ -13,26 +13,32 @@ use ragit_fs::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
+use std::collections::hash_map::Entry;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct TokenizerInner {
     unit: Unit,
+    pub case_sensitive: bool,
+
     // `unk` is contained in `tokens`
     pub unk: TokenId,
     pub tokens: HashMap<TokenId, Vec<u8>>,
 }
 
 impl TokenizerInner {
-    pub fn ascii() -> Self {
+    pub fn ascii(case_sensitive: bool) -> Self {
         let mut tokens = HashMap::new();
         tokens.insert(0, b"<unk>".to_vec());
 
         for c in (b' '..=b'~').chain(b'\t'..=b'\r') {
-            tokens.insert(c as TokenId, vec![c]);
+            if case_sensitive || c < b'A' || c > b'Z' {
+                tokens.insert(c as TokenId, vec![c]);
+            }
         }
 
         let mut result = TokenizerInner {
             unit: Unit::Char,
+            case_sensitive,
             unk: 0,
             tokens,
         };
@@ -40,7 +46,7 @@ impl TokenizerInner {
         result
     }
 
-    pub fn from_tokens(tokens: Vec<String>) -> Self {
+    pub fn from_tokens(tokens: Vec<String>, case_sensitive: bool) -> Self {
         // dedup
         let tokens = tokens.into_iter().collect::<HashSet<_>>();
         let mut result = HashMap::new();
@@ -54,6 +60,7 @@ impl TokenizerInner {
 
         let mut result = TokenizerInner {
             unit: Unit::Char,
+            case_sensitive,
             unk: 0,
             tokens: result,
         };
@@ -98,6 +105,19 @@ impl TokenizerInner {
             counts.insert(unk_bytes.to_vec(), 0);
         }
 
+        if !config.case_sensitive {
+            let mut new_counts = HashMap::with_capacity(counts.len());
+
+            for (s, c) in counts.iter() {
+                match new_counts.entry(s.to_ascii_lowercase()) {
+                    Entry::Occupied(mut e) => { e.insert(*e.get() + *c); },
+                    Entry::Vacant(e) => { e.insert(*c); },
+                }
+            }
+
+            counts = new_counts;
+        }
+
         if let Some(limit) = config.char_vocab_size {
             if counts.len() > limit {
                 let mut sortable = counts.iter().map(|(b, c)| (b.clone(), *c)).collect::<Vec<_>>();
@@ -128,6 +148,7 @@ impl TokenizerInner {
 
         TokenizerInner {
             unit: config.unit,
+            case_sensitive: config.case_sensitive,
             unk: unk_id.unwrap(),
             tokens,
         }

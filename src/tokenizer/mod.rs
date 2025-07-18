@@ -22,8 +22,8 @@ pub struct Tokenizer {
 }
 
 impl Tokenizer {
-    pub fn ascii() -> Self {
-        Self::from_inner(TokenizerInner::ascii())
+    pub fn ascii(case_sensitive: bool) -> Self {
+        Self::from_inner(TokenizerInner::ascii(case_sensitive))
     }
 
     pub fn vocab_size(&self) -> usize {
@@ -47,8 +47,8 @@ impl Tokenizer {
         }
     }
 
-    pub fn from_tokens(tokens: Vec<String>) -> Self {
-        let inner = TokenizerInner::from_tokens(tokens);
+    pub fn from_tokens(tokens: Vec<String>, case_sensitive: bool) -> Self {
+        let inner = TokenizerInner::from_tokens(tokens, case_sensitive);
         Self::from_inner(inner)
     }
 

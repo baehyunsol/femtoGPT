@@ -32,8 +32,15 @@ impl TokenizerInner {
     /// If you've already built a state machine, this function is much faster than `encode`.
     /// You can build one with `TokenizerInner::build_state_machine()`.
     pub fn encode_with_state_machine(&self, s: &[u8], state_machine: &StateMachine) -> Vec<TokenId> {
+        let mut s = s;  // trick the borrow checker
         let mut cursor = 0;
         let mut result = vec![];
+        let lowercase: Vec<u8>;
+
+        if !self.case_sensitive {
+            lowercase = s.iter().map(|b| b.to_ascii_lowercase()).collect();
+            s = &lowercase;
+        }
 
         while cursor < s.len() {
             let (cursor_, token_id) = step_cursor(s, cursor, &state_machine, self.unk);

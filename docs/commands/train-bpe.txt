@@ -10,6 +10,7 @@ SYNOPSIS
 [verse]
 'gpt train-bpe' [--dataset <path=dataset.txt>] [--reserve-tokens <n=0>]
             [--tokenizer-data <path=tokenizer.json>] [--vocab-size <n=768>]
+            [--case-[in]sensitive]
 
 DESCRIPTION
 -----------
