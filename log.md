@@ -997,7 +997,7 @@ Removing PE is always better...
 - positional encoding: none
 - embedding degree: 256, num layers: 8, num heads 8 (???M params)
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
-- step: 1665, loss: 1.6631, elapsed: ??m ??s (AWS EC2 m5.4xlarge: 16vCPU, 64GB RAM)
+- step: ????, loss: ?.????, elapsed: ??m ??s (AWS EC2 m5.4xlarge: 16vCPU, 64GB RAM)
 - data: downloaded some files from [huggingface](https://huggingface.co/datasets/wikimedia/wikipedia/tree/main/20231101.en) and postprocessed it
   - I picked 4255 documents which contains keyword `"rogramming language"` from the dataset and concat them with delimiter `"<|endofdocument|>"`
 
