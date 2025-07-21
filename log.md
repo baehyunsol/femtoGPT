@@ -1072,10 +1072,36 @@ cp exp4-ext1.dat exp4-ext1-chk001.dat
 cargo run --release -- insert-layer --input exp4.dat --output exp4-ext2.dat --insert-at 6
 cargo run --release -- train --model exp4-ext2.dat --dropout 0.1 --steps 3001
 cp exp4-ext2.dat exp4-ext2-chk001.dat
+
+# step 4: further train models from step 3
+
+cargo run --release -- train --model exp1-ext1.dat --dropout 0.1 --steps 3001
+cp exp1-ext1.dat exp1-ext1-chk002.dat
+
+cargo run --release -- train --model exp1-ext2.dat --dropout 0.1 --steps 3001
+cp exp1-ext2.dat exp1-ext2-chk002.dat
+
+cargo run --release -- train --model exp2-ext1.dat --dropout 0.1 --steps 3001
+cp exp2-ext1.dat exp2-ext1-chk002.dat
+
+cargo run --release -- train --model exp2-ext2.dat --dropout 0.1 --steps 3001
+cp exp2-ext2.dat exp2-ext2-chk002.dat
+
+cargo run --release -- train --model exp3-ext1.dat --dropout 0.1 --steps 3001
+cp exp3-ext1.dat exp3-ext1-chk002.dat
+
+cargo run --release -- train --model exp3-ext2.dat --dropout 0.1 --steps 3001
+cp exp3-ext2.dat exp3-ext2-chk002.dat
+
+cargo run --release -- train --model exp4-ext1.dat --dropout 0.1 --steps 3001
+cp exp4-ext1.dat exp4-ext1-chk002.dat
+
+cargo run --release -- train --model exp4-ext2.dat --dropout 0.1 --steps 3001
+cp exp4-ext2.dat exp4-ext2-chk002.dat
 ```
 
 - `exp1-chk001.dat`, `exp2-chk001.dat`, `exp3-chk001.dat`, `exp4-chk001.dat`: loss 6.4
-- `exp1-chk002.dat`: loss 6.4
+- `exp1-chk002.dat`, `exp2-chk002.dat`, `exp3-chk002.dat`: loss 6.4
 
 comparison between exp1-chk001 and exp1-chk002
 
