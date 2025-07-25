@@ -991,7 +991,9 @@ I prompted them with `"acbafbe3"`, whose answer is `"gih;\n"`
 
 Removing PE is always better...
 
-# 31. Training an English model 1
+Also, inserting a layer and training 200 more steps always lowers the loss.
+
+# 31. Training an English model 1 (fail)
 
 - tokenizer: bpe (1024 tokens, 64 reserved tokens), case sensitive
 - positional encoding: none
@@ -1100,8 +1102,7 @@ cargo run --release -- train --model exp4-ext2.dat --dropout 0.1 --steps 3001
 cp exp4-ext2.dat exp4-ext2-chk002.dat
 ```
 
-- `exp1-chk001.dat`, `exp2-chk001.dat`, `exp3-chk001.dat`, `exp4-chk001.dat`: loss 6.4
-- `exp1-chk002.dat`, `exp2-chk002.dat`, `exp3-chk002.dat`: loss 6.4
+All the 24 checkpoints have very similar loss (around 6.4). It seems like nothing's getting better even though I trained them for 12000 steps.
 
 comparison between exp1-chk001 and exp1-chk002
 
@@ -1144,3 +1145,131 @@ This is very, very strange. I mean, it's not what I've expected. For 5000 steps,
 
 1. The model is almost complete. When `head_norm` and layer-7 converge, the model will become smart and generate valid outputs.
 2. The size of the model (6.8M parameters) is too small to understand English. It'll converge, but will never generate something useful.
+
+comparison between exp1-ext1-chk001 and exp1-ext1-chk002
+
+```
+exp1-ext1-chk001.dat is parent of exp1-ext1-chk002.dat.
+exp1-ext1-chk002.dat is 3001-steps further trained version of exp1-ext1-chk001.dat
+key: atten_norm_8_coeff, cosine: 0.932131
+key: proj_8_bias, cosine: 0.933034
+key: atten_norm_8_bias, cosine: 0.956440
+key: head_norm_coeff, cosine: 0.959888
+key: feedforward2_8_bias, cosine: 0.975647
+key: feedforward2_8_weights, cosine: 0.976924
+key: norm_6_bias, cosine: 0.979071
+key: feedforward1_8_bias, cosine: 0.979866
+key: proj_6_bias, cosine: 0.984398
+key: feedforward2_7_bias, cosine: 0.985090
+key: atten_norm_7_bias, cosine: 0.986334
+key: head_norm_bias, cosine: 0.987542
+key: proj_7_bias, cosine: 0.988367
+key: norm_8_bias, cosine: 0.989575
+key: feedforward1_8_weights, cosine: 0.989715
+token_id: 36, token: " ", head: 0, cosine: 1.000000
+token_id: 597, token: "-", head: 0, cosine: 1.000000
+token_id: 36, token: " ", head: 5, cosine: 1.000000
+token_id: 10, token: "s", head: 0, cosine: 1.000000
+token_id: 776, token: "vi", head: 0, cosine: 1.000000
+token_id: 458, token: "a", head: 0, cosine: 1.000000
+token_id: 178, token: "s ", head: 0, cosine: 1.000000
+token_id: 36, token: " ", head: 3, cosine: 1.000000
+token_id: 404, token: "ut", head: 0, cosine: 1.000000
+token_id: 36, token: " ", head: 1, cosine: 1.000000
+token_id: 323, token: "um", head: 0, cosine: 1.000000
+token_id: 229, token: "V", head: 0, cosine: 1.000000
+token_id: 576, token: "al", head: 0, cosine: 1.000000
+token_id: 590, token: "m", head: 0, cosine: 1.000000
+token_id: 899, token: "P", head: 0, cosine: 1.000000
+```
+
+well...
+
+1. It hasn't learnt that much for 3000 steps. Again, there's no differences in word embeddings.
+2. The inserted layer is 6, but the changes are mostly in layer 8 (the last layer).
+
+# 32. Training an English model 2
+
+- tokenizer: bpe (256 tokens, 64 preserved)
+  - I wanted (256 tokens + 32 preserved), but I accidentally added preserved tokens twice.
+- positional encoding: none
+- embedding degree: 144, num layers: 6, num heads 6 (1.5M params)
+- dropout: 0.0, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- step: ????, loss: ?.????, elapsed: ??m ??s (apple M3 pro)
+  - step 1 ~ step 45: loss 5.7
+  - step 46 ~ step 440: loss 5.7 -> loss 3.8
+  - step 441 ~ step 580: loss 3.8
+- data: `dataset.txt` from keyvank's repository (the shakespeare)
+
+Something's happening..!!
+
+So I stopped the training at step 580, inserted a layer at 4, and continued training.
+
+- step 1 ~ step 62: loss 5.2 -> loss 3.8
+- step 63 ~ step 192: loss 3.8 -> loss 3.7
+- step 193 ~ step 280: loss 3.7
+- step 281 ~ step 432: loss 3.7 -> loss 3.6
+
+Good! Inserting a layer improves the model slightly. How about adding another?
+
+I inserted a layer at 4, again, and continued training.
+
+- step 1 ~ step 92: loss 7.58 -> loss 3.7
+- step 93 ~ step 200: loss 3.7 -> loss 3.6
+- step 201 ~ step 920: loss 3.6 -> loss 3.5
+
+While training, I made some checkpoints and compared them. I found that,
+
+1. Unlike #31, token embeddings were consistently changing (cosine 0.7 ~ 0.9).
+2. `head_k` and `head_q` of the newly inserted layer are the most changed layers.
+3. `head_v` of the newly inserted layer didn't change that much. Why?
+
+---
+
+The result isn't that bad. I prompted `BRUTUS:` 3 times and below are the generated outputs. I didn't cherry-pick the output.
+
+```
+BRUTUS: I ROKE:
+What I spriends that you come of thy the creminking.
+
+DULABETHA:
+Thouly, thought to my howersay, prownies
+That I be so bost morly.
+
+KING RI
+ThAMARDWARD IV:
+Mardo not be
+```
+
+```
+BRUTUS: CISI:
+But say, I was thou well'll comest you.
+
+CORILOLLANIO:
+What you, well, whendost ond air,
+I have sirtrangs and my sondake the sodone bence,
+That partimpt be dave the brinces with like me of th
+```
+
+```
+BRUTUS: VINCENTIO:
+Ory, I was the granger!
+This ave thee a mopright will you
+That a is gotheet of such theet ber, my heaks aveir,
+And bean is is the prower so thin thy hean osties,
+Which me in this
+```
+
+It is much better than previous large models (#28, #31), but isn't good enough to mark it "success". Maybe I should further-train this model in later experiments!
+
+But why? Why was #31 failure and #32 successful? Some differences are
+
+1. #31 has much larger dataset (1MiB vs 35MiB)
+2. #31 has much larger vocab size (1024 vs 256)
+3. #31's model is larger.
+  - #31 started with (embedding degree 256, num layers 8, num heads 8) and inserted a layer later.
+  - #32 started with (embedding degree 144, num layers 6, num heads 6) and inserted 2 layers later.
+4. #31's dropout is 0.1, and #32's is 0.
+  - I didn't mean to test dropout, but I forgot to set the dropout of #32.
+
+Why... maybe because a larger model requires much more steps to train. But #31's loss started at 6.4 and stayed there for 12000 steps! #32's loss started at 5.7 and began decreasing in less than 100 steps.
