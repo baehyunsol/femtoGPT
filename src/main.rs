@@ -999,9 +999,6 @@ fn run() -> Result<(), Error> {
             // we're NOT setting the parameters of the new layer
             // instead, we'll instantiate an empty GPT and write the new training
             // state to the empty GPT.
-            //
-            // 2025-07-14: It seems like the new layer is messing up the entire model.
-            //             How about cloning an existing layer?
             let bytes = bincode::serialize(&model)?;
             write_bytes(
                 &output_path,
