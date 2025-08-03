@@ -43,11 +43,14 @@ fn main() {
     if let Err(e) = run() {
         match e {
             Error::CliError { message, span } => {
-                eprintln!("cli error: {message}\n\n{}", ragit_cli::underline_span(
-                    &span.0,
-                    span.1,
-                    span.2,
-                ));
+                eprintln!(
+                    "cli error: {message}{}",
+                    if let Some(span) = span {
+                        format!("\n\n{}", ragit_cli::underline_span(&span))
+                    } else {
+                        String::new()
+                    },
+                );
                 std::process::exit(1);
             },
             _ => panic!("{e:?}"),
@@ -74,19 +77,18 @@ fn run() -> Result<(), Error> {
         Some("init") => {
             let parsed_args = ArgParser::new()
                 .optional_flag(&["--interactive"])
-                .arg_flag_with_default("--model", "model.dat", ArgType::Path)
-                // TODO: `ArgType::Enum("ascii", "char", "bpe")`
-                .arg_flag_with_default("--tokenizer", "ascii", ArgType::String)
-                .optional_arg_flag("--tokenizer-data", ArgType::Path)
+                .arg_flag_with_default("--model", "model.dat", ArgType::String)  // path
+                .arg_flag_with_default("--tokenizer", "ascii", ArgType::enum_(&["ascii", "char", "bpe"]))
+                .optional_arg_flag("--tokenizer-data", ArgType::String)  // path
                 .flag_with_default(&["--case-sensitive", "--case-insensitive"])
-                .arg_flag_with_default("--reserve-tokens", "0", ArgType::IntegerBetween { min: Some(0), max: None })
+                .arg_flag_with_default("--reserve-tokens", "0", ArgType::uinteger())
                 .arg_flag_with_default("--positional-encoding", "absolute", ArgType::String)
-                .arg_flag_with_default("--num-tokens", "80", ArgType::IntegerBetween { min: Some(0), max: None })
-                .arg_flag_with_default("--embedding-degree", "80", ArgType::IntegerBetween { min: Some(0), max: None })
-                .arg_flag_with_default("--num-layers", "4", ArgType::IntegerBetween { min: Some(0), max: None })
-                .arg_flag_with_default("--num-heads", "4", ArgType::IntegerBetween { min: Some(0), max: None })
+                .arg_flag_with_default("--num-tokens", "80", ArgType::uinteger())
+                .arg_flag_with_default("--embedding-degree", "80", ArgType::uinteger())
+                .arg_flag_with_default("--num-layers", "4", ArgType::uinteger())
+                .arg_flag_with_default("--num-heads", "4", ArgType::uinteger())
                 .short_flag(&["--interactive"])
-                .args(ArgType::Path, ArgCount::None)
+                .args(ArgType::String, ArgCount::None)
                 .parse(&args, 2)?;
 
             if parsed_args.show_help() {
@@ -262,10 +264,9 @@ fn run() -> Result<(), Error> {
         },
         Some("infer" | "inference") => {
             let parsed_args = ArgParser::new()
-                .arg_flag_with_default("--model", "model.dat", ArgType::Path)
-                .arg_flag_with_default("--count", "100", ArgType::IntegerBetween { min: Some(1), max: None })
-                // TODO: `ArgType::FloatBetween`
-                .arg_flag_with_default("--temperature", "0.5", ArgType::String)
+                .arg_flag_with_default("--model", "model.dat", ArgType::String)  // path
+                .arg_flag_with_default("--count", "100", ArgType::integer_between(Some(1), None))
+                .arg_flag_with_default("--temperature", "0.5", ArgType::float_between(Some(0.0), Some(1.0)))
                 .args(ArgType::String, ArgCount::Exact(1))
                 .parse(&args, 2)?;
 
@@ -334,13 +335,12 @@ fn run() -> Result<(), Error> {
         },
         Some("train") => {
             let parsed_args = ArgParser::new()
-                .arg_flag_with_default("--model", "model.dat", ArgType::Path)
-                .arg_flag_with_default("--dataset", "dataset.txt", ArgType::Path)
-                // TODO: `ArgType::FloatBetween`
-                .arg_flag_with_default("--dropout", "0", ArgType::String)
-                .arg_flag_with_default("--steps", "100000", ArgType::IntegerBetween { min: Some(10), max: None })
+                .arg_flag_with_default("--model", "model.dat", ArgType::String)  // path
+                .arg_flag_with_default("--dataset", "dataset.txt", ArgType::String)  // path
+                .arg_flag_with_default("--dropout", "0", ArgType::float_between(Some(0.0), Some(1.0)))
+                .arg_flag_with_default("--steps", "100000", ArgType::integer_between(Some(10), None))
                 .optional_flag(&["--reset-optimizer"])
-                .args(ArgType::Path, ArgCount::None)
+                .args(ArgType::String, ArgCount::None)
                 .parse(&args, 2)?;
 
             if parsed_args.show_help() {
@@ -500,11 +500,11 @@ fn run() -> Result<(), Error> {
         Some("train-bpe") => {
             let parsed_args = ArgParser::new()
                 .flag_with_default(&["--case-sensitive", "--case-insensitive"])
-                .arg_flag_with_default("--dataset", "dataset.txt", ArgType::Path)
-                .arg_flag_with_default("--tokenizer-data", "tokenizer.json", ArgType::Path)
-                .arg_flag_with_default("--reserve-tokens", "0", ArgType::IntegerBetween { min: Some(0), max: None })
-                .arg_flag_with_default("--vocab-size", "768", ArgType::IntegerBetween { min: Some(256), max: None })
-                .args(ArgType::Path, ArgCount::None)
+                .arg_flag_with_default("--dataset", "dataset.txt", ArgType::String)  // path
+                .arg_flag_with_default("--tokenizer-data", "tokenizer.json", ArgType::String)  // path
+                .arg_flag_with_default("--reserve-tokens", "0", ArgType::uinteger())
+                .arg_flag_with_default("--vocab-size", "768", ArgType::integer_between(Some(256), None))
+                .args(ArgType::String, ArgCount::None)
                 .parse(&args, 2)?;
 
             if parsed_args.show_help() {
@@ -565,9 +565,9 @@ fn run() -> Result<(), Error> {
             let parsed_args = ArgParser::new()
                 // It can be a model file or a tokenizer file. The program will
                 // detect the file type.
-                .arg_flag_with_default("--model", "tokenizer.json", ArgType::Path)
-                .arg_flag_with_default("--dataset", "dataset.txt", ArgType::Path)
-                .args(ArgType::Path, ArgCount::None)
+                .arg_flag_with_default("--model", "tokenizer.json", ArgType::String)  // path
+                .arg_flag_with_default("--dataset", "dataset.txt", ArgType::String)  // path
+                .args(ArgType::String, ArgCount::None)
                 .parse(&args, 2)?;
 
             if parsed_args.show_help() {
@@ -604,9 +604,9 @@ fn run() -> Result<(), Error> {
         },
         Some("loss") => {
             let parsed_args = ArgParser::new()
-                .arg_flag_with_default("--model", "model.dat", ArgType::Path)
-                .arg_flag_with_default("--limit", "10", ArgType::IntegerBetween { min: Some(0), max: None })
-                .args(ArgType::Path, ArgCount::None)
+                .arg_flag_with_default("--model", "model.dat", ArgType::String)  // path
+                .arg_flag_with_default("--limit", "10", ArgType::uinteger())
+                .args(ArgType::String, ArgCount::None)
                 .parse(&args, 2)?;
 
             if parsed_args.show_help() {
@@ -635,8 +635,8 @@ fn run() -> Result<(), Error> {
         },
         Some("info") => {
             let parsed_args = ArgParser::new()
-                .arg_flag_with_default("--model", "model.dat", ArgType::Path)
-                .args(ArgType::Path, ArgCount::None)
+                .arg_flag_with_default("--model", "model.dat", ArgType::String)  // path
+                .args(ArgType::String, ArgCount::None)
                 .parse(&args, 2)?;
 
             if parsed_args.show_help() {
@@ -709,8 +709,8 @@ fn run() -> Result<(), Error> {
         Some("compare") => {
             let parsed_args = ArgParser::new()
                 .optional_flag(&["--reverse"])
-                .arg_flag_with_default("--limit", "10", ArgType::IntegerBetween { min: Some(1), max: None })
-                .args(ArgType::Path, ArgCount::Exact(2))
+                .arg_flag_with_default("--limit", "10", ArgType::integer_between(Some(1), None))
+                .args(ArgType::String, ArgCount::Exact(2))  // path
                 .parse(&args, 2)?;
 
             if parsed_args.show_help() {
@@ -847,8 +847,8 @@ fn run() -> Result<(), Error> {
         },
         Some("cluster-tokens") => {
             let parsed_args = ArgParser::new()
-                .arg_flag_with_default("--model", "model.dat", ArgType::Path)
-                .args(ArgType::Path, ArgCount::None)
+                .arg_flag_with_default("--model", "model.dat", ArgType::String)  // path
+                .args(ArgType::String, ArgCount::None)
                 .parse(&args, 2)?;
 
             if parsed_args.show_help() {
@@ -908,10 +908,10 @@ fn run() -> Result<(), Error> {
         },
         Some("insert-layer") => {
             let parsed_args = ArgParser::new()
-                .arg_flag_with_default("--input", "model.dat", ArgType::Path)
-                .arg_flag_with_default("--output", "inserted.dat", ArgType::Path)
-                .arg_flag_with_default("--insert-at", "1", ArgType::IntegerBetween { min: Some(0), max: None })
-                .args(ArgType::Path, ArgCount::None)
+                .arg_flag_with_default("--input", "model.dat", ArgType::String)  // path
+                .arg_flag_with_default("--output", "inserted.dat", ArgType::String)  // path
+                .arg_flag_with_default("--insert-at", "1", ArgType::uinteger())
+                .args(ArgType::String, ArgCount::None)
                 .parse(&args, 2)?;
 
             if parsed_args.show_help() {

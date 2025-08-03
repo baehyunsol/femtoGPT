@@ -8,7 +8,7 @@ pub enum Error {
     StdIoError(std::io::Error),
     CliError {
         message: String,
-        span: (String, usize, usize),  // (args, error_from, error_to)
+        span: Option<ragit_cli::RenderedSpan>,
     },
     JsonSerdeError(serde_json::Error),
     BincodeError(Box<bincode::ErrorKind>),
@@ -36,7 +36,7 @@ impl From<ragit_cli::Error> for Error {
     fn from(e: ragit_cli::Error) -> Self {
         Error::CliError {
             message: e.kind.render(),
-            span: e.span.unwrap_rendered(),
+            span: e.span,
         }
     }
 }

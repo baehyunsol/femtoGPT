@@ -15,8 +15,8 @@ rand_distr = "0.4.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.140"
 bincode = "1.3.3"
-ragit-cli = "0.4.1"
-ragit-fs = "0.4.1"
+ragit-cli = "0.4.2"
+ragit-fs = "0.4.2"
 rayon = "1.7.0"
 thiserror = "1.0"
 ocl = { version = "0.19", optional = true }
