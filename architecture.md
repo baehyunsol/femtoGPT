@@ -12,24 +12,41 @@ struct OptimizerState {
 }
 
 struct Model {
-    // "byte" | "bpe"
-    tokenizer: String,
-
-    // some tokenizers require an extra data
-    // I want it to be `serde_json::Value`,
-    // but it seems like `bincode` does not
-    // support the type.
-    tokenizer_data: String,
+    // Simply put, it's a `Vec<String>` with some metadata.
+    tokenizer: TokenizerInner,
+    pos_enc: PosEnc,
     hyperparameters: Hyperparameters,
     training_state: TrainingState,
+    logs: Vec<Log>,
+}
+
+enum PosEnc {
+    None,
+
+    // sinusoidal positional encoding, proposed by "Attention Is All You Need"
+    Absolute,
+
+    // TODO
+    // It concats sinusoidal positional encoding to an embedding vector.
+    // Now that the vector has `embedding_degree * 2` dimension, it mat-muls the
+    // vector with `[embedding_degree * 2, embedding_degree]` matrix to make it
+    // compatible with the other layers.
+    // AbsoluteCat,
+
+    // TODO
+    // Rotary,
 }
 
 struct Hyperparameters {
     // It's like a max-context-size
     num_tokens: usize,
+    vocab_size: usize,
     embedding_degree: usize,
     num_layers: usize,
+
+    // head_size * num_heads == embedding_degree
     num_heads: usize,
+    head_size: usize,
 }
 ```
 
