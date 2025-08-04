@@ -1273,3 +1273,23 @@ But why? Why was #31 failure and #32 successful? Some differences are
   - I didn't mean to test dropout, but I forgot to set the dropout of #32.
 
 Why... maybe because a larger model requires much more steps to train. But #31's loss started at 6.4 and stayed there for 12000 steps! #32's loss started at 5.7 and began decreasing in less than 100 steps.
+
+# 33. A lesson
+
+I was doing a small experiment with `dummy_data/addition_dummy.py`. The model was initialized with (embedding degree 144, num layers 6, num heads 6). It converged to loss 1.8 very quickly, so I inserted a layer and continued training. I did this a few times. When a layer was inserted, the loss went up to 2.5 ~ 3.5 and quickly went down to 1.3 ~ 1.5. But there was one time, when a layer was inserted, the loss went up to 5.5 and never went below 2.5. Inserting a layer messed up a model!
+
+The lesson is that, inserting a layer might mess up a model, so we always have to create a checkpoint before inserting a layer and checkout the checkpoint if the insertion goes wrong.
+
+# 34. Training a Rust coder 7
+
+- tokenizer: bpe (1280 tokens + 64 reserved tokens), case sensitive
+- positional encoding: none
+- embedding degree: 324, num layers: 9, num heads 9 (12.2M params)
+- dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- step: ????, loss: ?.????, elapsed: ??m ??s (apple M3 pro)
+  - each step takes 6 ~ 7 seconds
+- data: see `exp34.nu`
+
+I'm training 2 models in parallel. Both models' loss started at 7.2.
+
+Both reached 6.6 quickly (at around 100 steps), and got stuck at 6.6 (currently both at step 1147).
