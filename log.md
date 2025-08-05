@@ -1280,16 +1280,65 @@ I was doing a small experiment with `dummy_data/addition_dummy.py`. The model wa
 
 The lesson is that, inserting a layer might mess up a model, so we always have to create a checkpoint before inserting a layer and checkout the checkpoint if the insertion goes wrong.
 
-# 34. Training a Rust coder 7
+# 34. Training a Rust coder 7 (failed)
 
 - tokenizer: bpe (1280 tokens + 64 reserved tokens), case sensitive
 - positional encoding: none
 - embedding degree: 324, num layers: 9, num heads 9 (12.2M params)
+- num tokens: 128
 - dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
-- step: ????, loss: ?.????, elapsed: ??m ??s (apple M3 pro)
+- step: 2697, loss: around 6.6, elapsed: ??m ??s (apple M3 pro)
   - each step takes 6 ~ 7 seconds
 - data: see `exp34.nu`
 
 I'm training 2 models in parallel. Both models' loss started at 7.2.
 
-Both reached 6.6 quickly (at around 100 steps), and got stuck at 6.6 (currently both at step 1147).
+Both reached 6.6 quickly (at around 100 steps), and got stuck at 6.6 (currently both at step 2697).
+
+# 35. Training a Rust coder 8 (failed)
+
+- tokenizer: bpe (512 tokens + 64 reserved tokens), case sensitive
+- positional encoding: none
+- embedding degree: 96, num layers: 6, num heads 4 (780K params)
+- num tokens: 128
+- dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- steps: 730, loss: 4.4256, elapsed: 9m 20s (apple M3 pro)
+  - each step takes 600 ~ 700 ms
+- data: same as #34
+
+The model's loss started at 6.35, reached 4.4 quickly (at around 540 steps), and got stuck at 4.4 (currently at step 730).
+
+#34 and #35 are both bad, but #35 is bettern than #34. #34 has learnt something for 540 steps, while #35 learnt only for 100 steps. Again, it's proven that making a model bigger doesn't always make the model smarter.
+
+# 36. Training a Rust coder 9 (failed)
+
+- tokenizer: bpe (512 tokens + 64 reserved tokens), case sensitive
+  - exactly same as #35
+- positional encoding: none
+- embedding degree: 144, num layers: 6, num heads 6 (1.6M params)
+- num tokens: 128
+- dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- steps: 780, loss: 4.1666, elapsed: 19m 47s (apple M3 pro)
+  - each step takes 1200 ~ 1400 ms
+- data: same as #34
+
+The model's loss started at 6.35, reached 4.2 quickly (at around 520 steps), and got stuck at 4.2 (currently at step 780).
+
+Maybe... #34's failure was due to the tokenizer being too big, not due to the number of layers and heads.
+
+# 37. Training a Rust coder 10 (failed)
+
+- tokenizer: bpe (1280 tokens + 64 reserved tokens), case sensitive
+- positional encoding: none
+- embedding degree: 96, num layers: 6, num heads 4 (928K params)
+- num tokens: 128
+- dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- steps: 1020, loss: 4.6270, elapsed: 20m 24s (apple M3 pro)
+  - each step takes 600 ~ 700 ms
+- data: same as #34
+
+The model's loss started at 7.2, reached 4.7 quickly (at around 860 steps), and got stuck at 4.7 (currently at step 1020).
+
+My assumption at #36 is wrong. #35 and #37 are the same except that #37 has a bigger tokenizer. According to my assumption, #37 must be much worse than #35 and #34 (because #34 has the same tokenizer but bigger heads and layers). But #37 is better than #34 and almost as good as #35.
+
+My next guess is that #34 is just too big and the optimizer kept throwing meaningless gradients... But why? There are 70B models in the wild and #34 is only 12M. I have to start a training with a small model, then incrementally add layers and heads to the model. The problem is that I have `insert-layer` api, but I don't have `insert-head` api.

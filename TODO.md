@@ -1,3 +1,5 @@
+# 5. Add a new head to an existing model
+
 # 4. Learnable Absolute Position Encoding
 
 Instead of a sinusoidal positional vector, it adds a learnable vector to the input embeddings. The vector is chosen according to the position.
