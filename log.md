@@ -1342,3 +1342,425 @@ The model's loss started at 7.2, reached 4.7 quickly (at around 860 steps), and 
 My assumption at #36 is wrong. #35 and #37 are the same except that #37 has a bigger tokenizer. According to my assumption, #37 must be much worse than #35 and #34 (because #34 has the same tokenizer but bigger heads and layers). But #37 is better than #34 and almost as good as #35.
 
 My next guess is that #34 is just too big and the optimizer kept throwing meaningless gradients... But why? There are 70B models in the wild and #34 is only 12M. I have to start a training with a small model, then incrementally add layers and heads to the model. The problem is that I have `insert-layer` api, but I don't have `insert-head` api.
+
+# 38. Training a Rust coder 11
+
+- tokenizer: bpe (600 tokens + 40 reserved tokens), case sensitive
+- positional encoding: none
+- embedding degree: 162, num layers: 6, num heads 6 (2.1M params)
+  - initially embedding degree: 162, num layers: 4, num heads 6 (1.4M params)
+  - then became embedding degree: 162, num layers: 5, num heads 6 (1.7M params)
+- num tokens: 128
+- dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- steps: ????, loss: ?.????, elapsed: ??m ??s (apple M3 pro)
+- data: same as #34
+
+According to #37, I have to implement `insert-head` before doing #38. But I'm too lazy to do that. Instead, I began the training with many-head less-layer model. I'll add layers to the models.
+
+I'm training 2 models at the same time. They both started at loss 6.46. I'm currently at step 186 and the losses are 5.31. So far so good!
+
+I'm at step 248 and the losses are 4.75... great!
+I'm at step 279 and the losses are 4.63... nice!
+I'm at step 341 and the losses are 4.32... good!
+
+I think it's a good timing to insert layers. You can find the whole process at `exp38.nu`.
+
+- model1-ext1
+  - loss 6.11 -> 4.65 (for the first 31 steps)
+  - loss 4.65 -> 4.44 (for the next 31 steps)
+  - loss 4.44 -> 4.25 (for the next 31 steps)
+- model1-ext2
+  - loss 5.96 -> 4.66 (for the first 31 steps)
+  - loss 4.66 -> 4.37 (for the next 31 steps)
+  - loss 4.37 -> 4.26 (for the next 31 steps)
+- model2-ext1
+  - loss 7.17 -> 5.00 (for the first 31 steps)
+  - loss 5.00 -> 4.55 (for the next 31 steps)
+  - loss 4.55 -> 4.33 (for the next 31 steps)
+- model2-ext2
+  - loss 6.43 -> 4.80 (for the first 31 steps)
+  - loss 4.80 -> 4.41 (for the next 31 steps)
+  - loss 4.41 -> 4.29 (for the next 31 steps)
+
+So far so good.
+
+I have waited a few more hours (1500 more steps), and the losses are now 3.4 ~ 3.6.
+
+Before I went to bed, I thought there would be deviations in the models. I thought some models would have significantly smaller losses than the others. But they all have similar losses. Let me insert a layer and train a few more steps.
+
+- model1-ext1-ext1
+  - loss 7.87 -> 4.77 (for the first 31 steps)
+  - loss 4.77 -> 3.76 (for the next 31 steps)
+  - loss 3.76 -> 3.74 (for the next 31 steps)
+  - loss 3.74 -> 3.68 (for the next 31 steps)
+- model1-ext1-ext2
+  - loss 7.06 -> 4.51 (for the first 31 steps)
+  - loss 4.51 -> 3.58 (for the next 31 steps)
+  - loss 3.58 -> 3.67 (for the next 31 steps)
+  - loss 3.67 -> 3.70 (for the next 31 steps)
+- model1-ext2-ext1
+  - loss 7.09 -> 4.72 (for the first 31 steps)
+  - loss 4.72 -> 3.82 (for the next 31 steps)
+  - loss 3.82 -> 3.76 (for the next 31 steps)
+  - loss 3.76 -> 3.65 (for the next 31 steps)
+- model1-ext2-ext2
+  - loss 8.17 -> 4.90 (for the first 31 steps)
+  - loss 4.90 -> 3.87 (for the next 31 steps)
+  - loss 3.87 -> 3.88 (for the next 31 steps)
+  - loss 3.88 -> 3.67 (for the next 31 steps)
+- model2-ext1-ext1
+  - loss 8.40 -> 5.10 (for the first 31 steps)
+  - loss 5.10 -> 4.14 (for the next 31 steps)
+  - loss 4.14 -> 3.62 (for the next 31 steps)
+  - loss 3.62 -> 3.61 (for the next 31 steps)
+- model2-ext1-ext2
+  - loss 8.14 -> 5.05 (for the first 31 steps)
+  - loss 5.05 -> 3.93 (for the next 31 steps)
+  - loss 3.93 -> 3.81 (for the next 31 steps)
+  - loss 3.81 -> 3.71 (for the next 31 steps)
+- model2-ext2-ext1
+  - loss 8.42 -> 4.94 (for the first 31 steps)
+  - loss 4.94 -> 3.87 (for the next 31 steps)
+  - loss 3.87 -> 3.71 (for the next 31 steps)
+  - loss 3.71 -> 3.67 (for the next 31 steps)
+- model2-ext2-ext2
+  - loss 6.49 -> 4.37 (for the first 31 steps)
+  - loss 4.37 -> 3.73 (for the next 31 steps)
+  - loss 3.73 -> 3.66 (for the next 31 steps)
+  - loss 3.66 -> 3.59 (for the next 31 steps)
+
+So far so good.
+
+I have trained 248 more steps (total 372 steps per model). The losses are still 3.4 ~ 3.6, so I was wondering if they're learning something. I want to compare the models. Let's do some inferences.
+
+1. prompt: "pub(crate) fn add_numbers("
+
+model1-ext1-ext1
+
+```rs
+pub(crate) fn add_numbers(&mut self) {
+        self.tcx.sess.skip(errors::Muture::Scope) {
+            let err = if tcx.sess.file_oper().emit() {
+                return false;
+                return Some(insert();
+                self.ren_diagnostic.emp!(
+                self.dyn() {
+                    }
+                return self.requir(sulatch.clone(path, s),
+                if name.path.span, name);
+                }
+                }
+            }
+            }
+```
+
+model1-ext1-ext2
+
+```rs
+pub(crate) fn add_numbers() {
+        let mut supplicit_scope = &'_psp_pty_uns);
+        let mut fig = &mut self,
+        lobefi: fule: uile,
+        "spplicability"bix"debug"fund".is_d");
+        let mut spplit_ability = sc"debug"debug"_unwrap_target_optability"debug".un
+```
+
+model1-ext2-ext1
+
+```rs
+pub(crate) fn add_numbers() {
+        self.madd();
+        let sposs = &[12].block.0].make(_expr(subaseq, byma, &[b, basmspty, bbinder, subbinder, ");
+    backenvarch, r(ax),
+        scope, sma.casic_build.get_h_or.
+```
+
+model1-ext2-ext2
+
+```rs
+pub(crate) fn add_numbers().
+    }
+}
+
+/// Searly: In printrange ard for `. The `
+    /// to the protherwarten norit is not supilder pointer with a f that that poncan be used bit is `.
+    pub fn print_inference_infer(
+    #[inline]
+    pub fn dcx: u32,
+    /// Anapshould to
+```
+
+model2-ext1-ext1
+
+```rs
+pub(crate) fn add_numbers(),
+        fic_und::fix, 0,
+        indextrace: usize: Set,
+        f: Floc: Function,
+    ) -> T {
+        debug!(self.curce::from_susizeq!(fxHashother),
+        has_unsafe {
+        }", 0)),
+        name(),
+            Ascrimport_stric!("maillabelp 3"),
+        ff
+```
+
+model2-ext1-ext2
+
+```rs
+pub(crate) fn add_numbers(
+        &mut self,
+        asts: u32,
+        fix: T: If: u32,
+        T: u32,
+        s,
+        f32,
+        bi64,
+        data: i32,
+        ct: u32,
+        x: u32,
+        rs: i32,
+        fmonx: u32,
+        _u32,
+        mt::Si64,
+        v,
+        bi64,
+        c_u32,
+        v: u32,
+        _wnsafe: 32
+```
+
+model2-ext2-ext1
+
+```rs
+pub(crate) fn add_numbers() where_endable GenericArgumerichecauses for `
+    for `"uns` with "malready sted uns"debug")"f",
+    "riting listed for we don""" => "rinst -mas" 1", " => ""und" ", "),
+            _u86",
+            "rh64"" => "
+```
+
+model2-ext2-ext2
+
+```rs
+pub(crate) fn add_numbers().into();
+    let (self, c, self_ty, c) = self.tcx.type_ty();
+    let ty = &[1];
+    let ty = ffcx.type_ty();
+    let bcx.type_fxt_ty = [(self.tcx = Typ_try_ptransm_valize_type_fx.ty.ase_drop_transcrip(f.is_unwrap_ore_type_type_ty
+```
+
+2. prompt: "/// This is a"
+
+model1-ext1-ext1
+
+`````rs
+/// This is ailer.
+            // I as only one does not a ````, ```
+    /// ``` `.
+    /// `````
+    /// ```````.
+    ///
+    /// `````````````````.
+    ///
+    /// ``` ``````.
+    ///
+    /// `
+    /// ``]` and ````.
+    ///
+    /// ```]` or `.
+    ///
+    /// ``
+`````
+
+model1-ext1-ext2
+
+```rs
+/// This is a
+    /// ity bit withubdiagnostics for sulturing licure.
+    pub(self) -> Option<Buile {
+        #[super_parset_unwrap()]
+    pub fn from_path(self, g: u32) -> bool {
+        #[diagnostic)]
+    //rustcfn_rustccc_target_print(suggc_mappenggct]
+    #[sug!(
+```
+
+model1-ext2-ext1
+
+```rs
+/// This is aile only a baske the faill only to fulead mutilds a st mutains in it will be ding that export to the st spanichicht only backing it is the poss to alariated to the set that any cappe livistinge the sing the comp
+```
+
+model1-ext2-ext2
+
+```rs
+/// This is a
+    /// in the ```````````````
+    /// ```````````````````````
+    /// `````
+    /// ``````````````````/////////////////////////////////
+```
+
+model2-ext1-ext1
+
+```rs
+/// This is ails and hould not execking by for like are not ways in only result to init't with only othere in pro and prevalso we it not ne, the losures the bit we that mothere like it we it livisit and we coversions only doest ne
+```
+
+model2-ext1-ext2
+
+```rs
+/// This is awill (x, f ax Ablockswr gcts. more `&fi An`-s``-by`.
+    ///
+    /// Ataddy`-gc`"`.
+    ///
+    /// ``- or `
+    /// #### and `-in not prefore safe worknowrrequostatic`can's
+```
+
+model2-ext2-ext1
+
+```rs
+/// This is aill conly init prevalary only willt are mits balignore the functions and the al d
+        // d.
+    /// backetime bit will as a aluillh as this function anonly recurrentailderive warr.
+    /// unking in the mard be in as uary s
+```
+
+model2-ext2-ext2
+
+```rs
+/// This is aits in as the fmacros inke).
+    ///
+    /// ################![$line ------------------------------------------------------------------------------------------------------------------------------
+```
+
+3. prompt: "use crate::"
+
+model1-ext1-ext1
+
+```rs
+use crate::relages::s;
+use crate::traits::traits::{
+        for def_id.def_id();
+
+    cx().span_impl_crate_type_impl_def_id();
+    #[lage_trait_ref(def_id]
+    tcx item_impl]
+    let traits = self.tcx;
+        let ty = trait_items = tcx.is_unsion_trait_reg.is_cluggest_item(def_id);
+    }
+
+    /// Oution implif_trait item in vari
+```
+
+model1-ext1-ext2
+
+```rs
+use crate::mmir::mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
+```
+
+model1-ext2-ext1
+
+```rs
+use crate::{printrinits, binput));
+
+    let mut v = "eq";
+    let mut gccc.srmailting.capplaybrmaintiplevarch(ardsccc.lec_undys")]
+    subalreadytest_stction_valiatedsatompsatompty.d();
+    // This
+```
+
+model1-ext2-ext2
+
+```rs
+use crate::ree::Deredicate::Errowed, Sy::Sighierce::Info::PlaceEq, ErrowKind::StrrowIndexVec::new(Layout)) => {}),
+    };
+
+
+use crate::Index::Datalange;
+
+use crate::Mutput<'tcx, Bast_ty;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+use crate
+```
+
+model2-ext1-ext1
+
+```rs
+use crate::{Ent::From::SeSubdiagnostic(sym::rustcal::Node::errors::{{self, err};
+use rustc_errors::{self, errors::{self, err, Labelement};
+use rustc_span::errors::{self, attr, TyCtxt, Span, err, Striddle::span, Labelper::error, err};
+use rustc_span, attrs::{
+    {
+    Foldle::{
+        span:
+```
+
+model2-ext1-ext2
+
+```rs
+use crate::implicite;
+use crate::fmt::malization::mm::{Clobalign::Inttractt::traits::Enc::Met::spec::FlayoutAss::Ass::ScureSub(InferOblanit::FltLayoutAssAnMut { Cx, Scation: Ty::Inter::Branyncas
+```
+
+model2-ext2-ext1
+
+```rs
+use crate::ffeatures::{{}
+                };
+
+    use crate::An::{
+    };
+use crate::print::{ {use crate::{ ! use crate::{
+    };
+use crate::midd::{
+    };
+
+    use crate::{self, features::{
+    };
+
+    use crate::{
+    gh::{
+    };
+
+
+use crate::{
+    g::And::{
+        features::*;
+
+    };
+```
+
+model2-ext2-ext2
+
+```rs
+use crate::{{$visitormat!("{ $det", opy, ${:?}"{:?}", $() {:?}", ty.kind, $($ty)) kind, true, $value.name));
+    }
+
+    fn visit_hir_id, $ty_kind: An_ty: self.tcx.is_corrow_mutput_ty_kind: TyCtxt::new()) {
+            self.visit_node(kind: self.tcx.is_sour
+```
+
+Well... I wanted to filter out garbage models, but I can't tell differences between the models. I guess I have to train more steps!
+
+I have trained 93 more steps, and I want to move on to next experiments.
+
+#38 is not finished yet. I have saved all the checkpoints and I'll insert layers to the checkpoints and continue training them in later experiments.
