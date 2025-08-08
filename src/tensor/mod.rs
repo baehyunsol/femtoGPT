@@ -5,7 +5,6 @@ mod ops;
 mod view;
 pub use elements::*;
 pub use error::*;
-pub use helper::*;
 pub use ops::*;
 pub use view::*;
 
@@ -127,7 +126,7 @@ pub trait TensorMutOps<V: TensorElement>: TensorOps<V> {
         self.blob_mut().clone_from_slice(t.blob());
         Ok(())
     }
-    fn get_mut(&mut self, ind: usize) -> Result<TensorMutView<V>, TensorError> {
+    fn get_mut(&mut self, ind: usize) -> Result<TensorMutView<'_, V>, TensorError> {
         if ind >= self.len() {
             return Err(TensorError::InvalidIndex);
         }
@@ -152,7 +151,7 @@ pub trait TensorOps<V: TensorElement>: Sized + Into<Tensor<V>> + Send + Sync {
     fn tensor(&self) -> &Tensor<V>;
     fn offset(&self) -> usize;
 
-    fn keep_right(&self, dims: usize) -> Result<TensorView<V>, TensorError> {
+    fn keep_right(&self, dims: usize) -> Result<TensorView<'_, V>, TensorError> {
         let mut shape = self.shape().to_vec();
         if shape.len() < dims {
             return Err(TensorError::UnexpectedShape);
@@ -224,7 +223,7 @@ pub trait TensorOps<V: TensorElement>: Sized + Into<Tensor<V>> + Send + Sync {
     fn size(&self) -> usize {
         self.shape().iter().fold(1, |curr, s| curr * s)
     }
-    fn view(&self) -> TensorView<V> {
+    fn view(&self) -> TensorView<'_, V> {
         TensorView {
             mirror: self.tensor(),
             offset: self.offset(),
@@ -232,7 +231,7 @@ pub trait TensorOps<V: TensorElement>: Sized + Into<Tensor<V>> + Send + Sync {
         }
     }
 
-    fn get(&self, ind: usize) -> Result<TensorView<V>, TensorError> {
+    fn get(&self, ind: usize) -> Result<TensorView<'_, V>, TensorError> {
         if ind >= self.len() {
             return Err(TensorError::InvalidIndex);
         }
