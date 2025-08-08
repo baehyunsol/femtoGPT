@@ -1764,3 +1764,67 @@ Well... I wanted to filter out garbage models, but I can't tell differences betw
 I have trained 93 more steps, and I want to move on to next experiments.
 
 #38 is not finished yet. I have saved all the checkpoints and I'll insert layers to the checkpoints and continue training them in later experiments.
+
+# 39. `init-with` test 1
+
+- tokenizer: bpe (2048 tokens + 128 reserved tokens), case sensitive
+- positional encoding: none
+- embedding degree: 162, num layers: 6, num heads 6 (2.6M params)
+- num tokens: 160
+- dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- data: custon data (korean legal documents)
+
+A lesson from previous experiments is that larger models are more difficult to train. A model is initialized with random parameters, and for larger models, the optimizer doesn't know which direction to go and just throws random gradients.
+
+So I initialized models with parameters of #38, and trained it with completely different dataset and tokenizer. Even though #38 is a Rust coder, I hope it learns korean much faster than random-initialized models, since the checkpoints already have some level of intelligence.
+
+There are 4 models:
+
+- model1.dat: randomly initialized
+  - loss 7.68 -> 7.65 (first 31 steps)
+  - loss 7.65 -> 7.45 (next 31 steps)
+  - loss 7.45 -> 6.95 (next 31 steps)
+  - loss 6.95 -> 6.73 (next 31 steps)
+  - loss 6.73 -> 6.62 (next 31 steps)
+  - loss 6.62 -> 6.46 (next 31 steps)
+  - loss 6.46 -> 6.20 (next 31 steps)
+  - loss 6.20 -> 6.11 (next 31 steps)
+- model2.dat: randomly initialized
+  - loss 7.68 -> 7.66 (first 31 steps)
+  - loss 7.66 -> 7.46 (next 31 steps)
+  - loss 7.46 -> 6.94 (next 31 steps)
+  - loss 6.94 -> 6.76 (next 31 steps)
+  - loss 6.76 -> 6.65 (next 31 steps)
+  - loss 6.65 -> 6.51 (next 31 steps)
+  - loss 6.51 -> 6.36 (next 31 steps)
+  - loss 6.36 -> 6.17 (next 31 steps)
+- model3.dat: initialized with model1-ext1-ext1 of #38
+  - loss 7.70 -> 7.31 (first 31 steps)
+  - loss 7.31 -> 6.78 (next 31 steps)
+  - loss 6.78 -> 6.50 (next 31 steps)
+  - loss 6.50 -> 6.03 (next 31 steps)
+  - loss 6.03 -> 5.56 (next 31 steps)
+  - loss 5.56 -> 5.29 (next 31 steps)
+  - loss 5.29 -> 5.08 (next 31 steps)
+  - loss 5.08 -> 5.06 (next 31 steps)
+- model4.dat: initialized with model2-ext1-ext1 of #38
+  - loss 7.70 -> 7.30 (first 31 steps)
+  - loss 7.30 -> 6.77 (next 31 steps)
+  - loss 6.77 -> 6.62 (next 31 steps)
+  - loss 6.62 -> 6.12 (next 31 steps)
+  - loss 6.12 -> 5.78 (next 31 steps)
+  - loss 5.78 -> 5.32 (next 31 steps)
+  - loss 5.32 -> 5.15 (next 31 steps)
+  - loss 5.15 -> 5.09 (next 31 steps)
+
+It went out as exactly I've expected. model3 and model4 learns much faster!
+
+I also have another hypothesis: previous failures are because their `num_tokens` were too small. Transformers have to learn from context, but context of 80 tokens is too small to learn anything.
+
+# 40. Training a Rust coder 12
+
+Let's continue #38 and #39. I already wrote the script at `./exp40.nu`. I have to run this. The point is
+
+1. We're further training the #38's checkpoints, so that we can have a foundation model.
+2. I'm inserting a layer so that the model can become smarter.
+3. I increase `num_tokens` and `vocab_size`. I hope it helps.
