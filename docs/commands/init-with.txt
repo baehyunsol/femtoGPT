@@ -1,0 +1,27 @@
+gpt-init-with(1)
+==========
+
+NAME
+----
+gpt-init-with - Initialize a femtoGPT model with a parent model
+
+SYNOPSIS
+--------
+[verse]
+'gpt init-with' [--parent <model=parent.dat>] [--child <model=model.dat>]
+            [--tokenizer-data <path=tokenizer.json>] [--num-tokens <n>]
+            [--case-[in]sensitive]
+
+DESCRIPTION
+-----------
+It initializes a model with a tokenizer data and a parent model. The child
+model is initialized with the parent model's parameters, except token-related
+ones (`token_embedding`, `head_map_bias` and `head_map_weights`).
+
+As of now, it only supports bpe tokenizers. So you have to run `train-bpe`
+command and feed the result to this command (usually tokenizer.json).
+
+If `--num-tokens` is not specified, it inherits that of the parent.
+
+OPTIONS
+-------

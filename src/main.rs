@@ -262,6 +262,136 @@ fn run() -> Result<(), Error> {
 
             Ok(())
         },
+        Some("init-with") => {
+            let parsed_args = ArgParser::new()
+                .arg_flag_with_default("--parent", "parent.dat", ArgType::String)  // path
+                .arg_flag_with_default("--child", "model.dat", ArgType::String)  // path
+                .arg_flag_with_default("--tokenizer-data", "tokenizer.json", ArgType::String)  // path
+                .optional_arg_flag("--num-tokens", ArgType::uinteger())
+                .flag_with_default(&["--case-sensitive", "--case-insensitive"])
+                .args(ArgType::String, ArgCount::None)
+                .parse(&args, 2)?;
+
+            if parsed_args.show_help() {
+                println!("{}", include_str!("../docs/commands/init-with.txt"));
+                return Ok(());
+            }
+
+            let parent_path = parsed_args.arg_flags.get("--parent").unwrap().to_string();
+            let child_path = parsed_args.arg_flags.get("--child").unwrap().to_string();
+            let tokenizer_path = parsed_args.arg_flags.get("--tokenizer-data").unwrap().to_string();
+            let num_tokens = parsed_args.arg_flags.get("--num-tokens").map(|n| n.parse::<usize>().unwrap());
+            let case_sensitive = parsed_args.get_flag(0).unwrap() == "--case-sensitive";
+
+            let bytes = read_bytes(&parent_path)?;
+            let parent_model: Model = bincode::deserialize(&bytes).unwrap();
+            let num_tokens = num_tokens.unwrap_or(parent_model.hyperparameters.num_tokens);
+            let pos_enc = parent_model.pos_enc;
+            let Hyperparameters {
+                embedding_degree,
+                num_layers,
+                num_heads,
+                head_size,
+                ..
+            } = parent_model.hyperparameters;
+
+            let mut rng = rand::thread_rng();
+            let tokenizer = {
+                let data = read_string(&tokenizer_path)?;
+                let data: serde_json::Value = serde_json::from_str(&data)?;
+
+                match serde_json::from_value::<Vec<String>>(data.clone()) {
+                    Ok(tokens) => Tokenizer::from_tokens(tokens, case_sensitive),
+                    Err(_) => Tokenizer::from_inner(serde_json::from_value(data)?),
+                }
+            };
+            let vocab_size = tokenizer.vocab_size();
+
+            let mut gpt = GPT::new(
+                &mut rng,
+                graph,
+                is_gpu.then(|| batch_size), // Pre-allocate batches only when using GPUs
+                vocab_size,
+                embedding_degree,
+                num_tokens,
+                num_layers,
+                num_heads,
+                head_size,
+                0.0,  // dropout
+                vec![],  // logs
+                pos_enc,
+            )?;
+            gpt.sync()?;
+            println!("Successfully initialized a model with {} parameters", gpt.num_params());
+            let mut training_state = gpt.get_training_state().unwrap();
+
+            for key in [
+                "head_norm_bias", "head_norm_coeff",
+            ] {
+                training_state.tensors.insert(
+                    key.to_string(),
+                    parent_model.training_state.tensors.get(key).unwrap().clone(),
+                );
+            }
+
+            for ly in 0..num_layers {
+                for key in [
+                    &format!("norm_{ly}_bias"), &format!("norm_{ly}_coeff"),
+                    &format!("proj_{ly}_bias"), &format!("proj_{ly}_weights"),
+                    &format!("atten_norm_{ly}_bias"), &format!("atten_norm_{ly}_coeff"),
+                    &format!("feedforward1_{ly}_bias"), &format!("feedforward1_{ly}_weights"),
+                    &format!("feedforward2_{ly}_bias"), &format!("feedforward2_{ly}_weights"),
+                ] {
+                    training_state.tensors.insert(
+                        key.to_string(),
+                        parent_model.training_state.tensors.get(key).unwrap().clone(),
+                    );
+                }
+
+                for hd in 0..num_heads {
+                    for key in [
+                        &format!("head_{ly}_{hd}_k"),
+                        &format!("head_{ly}_{hd}_q"),
+                        &format!("head_{ly}_{hd}_v"),
+                    ] {
+                        training_state.tensors.insert(
+                            key.to_string(),
+                            parent_model.training_state.tensors.get(key).unwrap().clone(),
+                        );
+                    }
+                }
+            }
+
+            let hyperparameters = Hyperparameters {
+                num_tokens,
+                vocab_size,
+                embedding_degree,
+                num_layers,
+                num_heads,
+                head_size,
+            };
+
+            let child_model = Model {
+                tokenizer: tokenizer.inner.clone(),
+                pos_enc,
+                hyperparameters,
+                training_state,
+
+                // I just realized that adding a variant to `LogKind`
+                // breaks a backward compatibility. Oh no...
+                // I really want to add a variant `LogKind::InitWithParent`,
+                // but `bincode` doesn't allow me to do that :(
+                logs: vec![Log::init(hyperparameters)],
+            };
+            let bytes = bincode::serialize(&child_model)?;
+            write_bytes(
+                &child_path,
+                &bytes,
+                WriteMode::Atomic,
+            )?;
+
+            Ok(())
+        },
         Some("infer" | "inference") => {
             let parsed_args = ArgParser::new()
                 .arg_flag_with_default("--model", "model.dat", ArgType::String)  // path
