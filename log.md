@@ -1869,3 +1869,58 @@ wesersregit"<unk>ar ent = if  "
 ```
 
 Well... I guess I have to try again with an easier dataset.
+
+# 42. Training a model that perfectly understands a very simple sequence
+
+`dummy_data/simple_sequence.py` generates a very simple sequence. I want to train a model that perfectly understands the sequence. Here're the settings.
+
+1. I'll always use num_tokens = 32, tokenizer = ascii, positional_encoding = none. I'll only change embedding_degree, num_layers and num_heads.
+2. I'll use these samples to evaluate:
+  - input: `c%%d`, output: `c%%d^^e@@f##g$$h%%`
+  - input: `a$$b`, output: `a$$b%%c^^d@@e##f$$`
+  - input: `d%%e`, output: `d%%e^^f@@g##h$$i%%`
+
+Attemps
+
+1. embedding degree 96, num layers 6, num heads 6 (trained 607 steps)
+  - input: `c%%d`, output: `c%%d^^d@@d##c$$e%%` (fail)
+  - input: `a$$b`, output: `a$$b%%e^^f@@c##e$$` (fail)
+  - input: `d%%e`, output: `d%%e^^d@@f##e$$f%%` (fail)
+2. embedding degree 64, num layers 8, num heads 8 (trained 555 steps)
+  - input: `c%%d`, output: `c%%d^^a@@a##f$$h%%` (fail)
+  - input: `a$$b`, output: `a$$b%%f^^d@@f##c$$` (fail)
+  - input: `d%%e`, output: `d%%e^^d@@h##f$$h%%` (fail)
+3. embedding degree 32, num layers 12, num heads 4 (trained 1000 steps)
+  - input: `c%%d`, output: `c%%d$$$^%^^%$$#^^%` (fail)
+  - input: `a$$b`, output: `a$$b^$$##^$##$^#%^` (fail)
+  - input: `d%%e`, output: `d%%e#$$$^$$^###^^#` (fail)
+4. embedding degree 108, num layers 9, num heads 9 (trained 603 steps)
+  - input: `c%%d`, output: `c%%d^^e@@c##b$$e%%` (fail)
+  - input: `a$$b`, output: `a$$b%%c^^b@@d##d$$` (fail)
+  - input: `d%%e`, output: `d%%e^^c@@b##e$$c%%` (fail)
+5. embedding degree 64, num layers 12, num heads 4 (trained 681 steps)
+  - input: `c%%d`, output: `c%%d^^c@@h##h$$h%%` (fail)
+  - input: `a$$b`, output: `a$$b%%c^^b@@c##h$$` (fail)
+  - input: `d%%e`, output: `d%%e^^g@@c##b$$g%%` (fail)
+5. embedding degree 64, num layers 12, num heads 8 (trained 519 steps)
+  - input: `c%%d`, output: `c%%d^^f@@a##a$$f%%` (fail)
+  - input: `a$$b`, output: `a$$b%%b^^a@@b##b$$` (fail)
+  - input: `d%%e`, output: `d%%e^^b@@f##d$$d%%` (fail)
+6. embedding degree 144, num layers 8, num heads 6 (trained 783 steps)
+  - input: `c%%d`, output: `c%%d^^d@@e##f$$h%%` (fail)
+  - input: `a$$b`, output: `a$$b%%c^^e@@e##d$$` (fail)
+  - input: `d%%e`, output: `d%%e^^e@@f##a$$b%%` (fail)
+7. embedding degree 162, num layers 9, num heads 6 (trained 442 steps)
+  - input: `c%%d`, output: `c%%d^^h@@a##c$$c%%` (fail)
+  - input: `a$$b`, output: `a$$b%%a^^g@@a##g$$` (fail)
+  - input: `d%%e`, output: `d%%e^^a@@g##c$$a%%` (fail)
+
+I don't understand... Most models, whether it's small (411K params) or large (2.8M params), can very successfully generate a sequence of special characters (`@#$%^`), but cannot generate a sequence of alphabets (`abcdefgh`).
+
+I also tried `init-with` a checkpoint from #38. I used model1-ext1-ext2. FYI, it has embedding degree 162, num layers 6, and num heads 6. I set num_tokens = 32. I have trained for 398 steps.
+
+- input: `c%%d`, output: `c%%d^^e@@f##g$$h%%` (success)
+- input: `a$$b`, output: `a$$b%%c^^d@@e##f$$` (success)
+- input: `d%%e`, output: `d%%e^^f@@g##h$$a%%` (success)
+
+This is awesome. It gives me another reason I should have a foundation model. I hope #40 goes well.
