@@ -1828,3 +1828,44 @@ Let's continue #38 and #39. I already wrote the script at `./exp40.nu`. I have t
 1. We're further training the #38's checkpoints, so that we can have a foundation model.
 2. I'm inserting a layer so that the model can become smarter.
 3. I increase `num_tokens` and `vocab_size`. I hope it helps.
+4. I'm using `init-with` command before `insert-layer`. It'd mess up the checkpoints and that's intended. Since the checkpoints are already trained enough, the fastest way to train the new layer is to make the new layer do nothing, so that the models behave like checkpoints.
+
+# 41. A lot of small heads (failed)
+
+- tokenizer: bpe (600 tokens + 40 reserved tokens), case sensitive
+- positional encoding: none
+- embedding degree: 80, num layers: 10, num heads 10 (879K params)
+- num tokens: 128
+- dropout: 0.1, base_lr: 0.001, min_lr: 0.00001, warmup_steps: 100, decay_steps: 50000
+- steps: 533, loss: 5.9167, elapsed: ??m ??s (Intel Core Ultra 7 155H)
+  - each step takes 2 seconds
+- data: same as #34
+
+Generated outputs
+
+1. prompt: "pub(crate) fn add_numbers("
+
+```rs
+pub(crate) fn add_numbers(mCs rkp orriteorfn (ssF.` ic,
+    y.ctsnstlstation Ellthbiz;
+es(Mn.nemaswfn er// ,
+        (d_s]rinasee f[tc<'tcx>: _ neowBit    enionL<unk>_arcfn gbtate(,
+        tr::_tion| it::in0
+```
+
+2. prompt: "/// This is a"
+
+```rs
+/// This is ae // let : C` edlvC// (    i::I_ucalunionx::if, ::lecthllseationtt::as.ce = gitd the eB.o, tmlet nb_nov_v: ke  pridthFer., .if /// : ()EobA)_le &p    fslifc (inionnt
+```
+
+3. prompt: "use crate::"
+
+```rs
+use crate::if ask    , oescecen_c::_depO::er/// blse"`in,
+        (sg::<unk> elfn mthmlet P<unk>("e sew
+, x    s::re{{Fion::Lis ionerfle._iSrruner_if : enttr1oruner
+wesersregit"<unk>ar ent = if  "
+```
+
+Well... I guess I have to try again with an easier dataset.
