@@ -183,8 +183,6 @@ impl<G: Graph> GPT<G> {
 
             let mut heads = Vec::new();
 
-            // TODO: Why are some MatMuls reversed?
-            //       k should be rotated_k_params @ norm_input... isn't it?
             // Multi-head Attention
             for h in 0..num_heads {
                 // Key
