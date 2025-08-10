@@ -1870,7 +1870,7 @@ wesersregit"<unk>ar ent = if  "
 
 Well... I guess I have to try again with an easier dataset.
 
-# 42. Training a model that perfectly understands a very simple sequence
+# 42. Training a model that perfectly understands a very simple sequence (success)
 
 `dummy_data/simple_sequence.py` generates a very simple sequence. I want to train a model that perfectly understands the sequence. Here're the settings.
 
@@ -1924,3 +1924,42 @@ I also tried `init-with` a checkpoint from #38. I used model1-ext1-ext2. FYI, it
 - input: `d%%e`, output: `d%%e^^f@@g##h$$a%%` (success)
 
 This is awesome. It gives me another reason I should have a foundation model. I hope #40 goes well.
+
+# 43. Simple sequence 2
+
+Inspired by #42, I created another simple sequence. See `dummy_data/simple_sequence2.py`.
+
+I wrote `tokenizer.json`, so that `init` and `init-with` command can use the exact same tokenizer. I also set num_tokens=48 and positional_encoding=none for all models.
+
+Evaluations:
+
+- input: `beloot;`, answer (next 2 lines): `cfhppu;`, `agiqqv;`
+- input: `agissy;`, answer (next 2 lines): `bdjmmz;`, `ceknn0;`
+- input: `cfkqqt;`, answer (next 2 lines): `aglrru;`, `bdhssv;`
+
+1. embedding_degree 64, num layers 4, num heads 4 (trained 801 steps)
+  - input: `beloot;`, output: `aflppx;`, `aehqqz;` (fail)
+  - input: `agissy;`, output: `cfimmx;`, `aeinnx;` (fail)
+  - input: `cfkqqt;`, output: `afkrr0;`, `afkss1;` (fail)
+2. embedding_degree 80, num layers 4, num heads 4 (trained 984 steps)
+  - input: `beloot;`, output: `cfhppw;`, `agiqqw;` (fail)
+  - input: `agissy;`, output: `bdimmw;`, `cejnnu;` (fail)
+  - input: `cfkqqt;`, output: `aghrru;`, `bdhssx;` (fail)
+3. embedding_degree 64, num layers 6, num heads 4 (trained 1148 steps)
+  - input: `beloot;`, output: `afippu;`, `cghqq2;` (fail)
+  - input: `agissy;`, output: `cdjmmu;`, `beinn1;` (fail)
+  - input: `cfkqqt;`, output: `bgirrv;`, `bdjss1;` (fail)
+4. embedding_degree 80, num layers 6, num heads 4 (trained 1435 steps)
+  - input: `beloot;`, output: `cfhppu;`, `agiqq2;` (fail)
+  - input: `agissy;`, output: `bdjmmx;`, `ceknnz;` (fail)
+  - input: `cfkqqt;`, output: `aglrrt;`, `bdhssu;` (fail)
+5. embedding_degree 162, num layers 6, num heads 6 (trained 840 steps)
+  - input: `beloot;`, output: `cfipp0;`, `agiqq2;` (fail)
+  - input: `agissy;`, output: `bdkmm0;`, `ceknn0;` (fail)
+  - input: `cfkqqt;`, output: `aghrr0;`, `bdhssx;` (fail)
+6. embedding_degree 162, num layers 6, num heads 6 (init-with model1-ext1-ext2 from #38, trained 630 steps)
+  - input: `beloot;`, output: `cfhppu;`, `agiqqv;` (success)
+  - input: `agissy;`, output: `bdjmmz;`, `ceknn0;` (success)
+  - input: `cfkqqt;`, output: `aglrru;`, `bdhssv;` (success)
+
+Again, intializing a model with `model1-ext1-ext2`'s parameter gives me a much better model than initializing one from scratch.
