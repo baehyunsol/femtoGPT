@@ -1386,7 +1386,7 @@ So far so good.
 
 I have waited a few more hours (1500 more steps), and the losses are now 3.4 ~ 3.6.
 
-Before I went to bed, I thought there would be deviations in the models. I thought some models would have significantly smaller losses than the others. But they all have similar losses. Let me insert a layer and train a few more steps.
+Before I went to bed, I thought there would be deviations between the models. I thought some models would have significantly smaller losses than the others. But they all have similar losses. Let me insert a layer and train a few more steps.
 
 - model1-ext1-ext1
   - loss 7.87 -> 4.77 (for the first 31 steps)
@@ -1829,6 +1829,86 @@ Let's continue #38 and #39. I already wrote the script at `./exp40.nu`. I have t
 2. I'm inserting a layer so that the model can become smarter.
 3. I increase `num_tokens` and `vocab_size`. I hope it helps.
 4. I'm using `init-with` command before `insert-layer`. It'd mess up the checkpoints and that's intended. Since the checkpoints are already trained enough, the fastest way to train the new layer is to make the new layer do nothing, so that the models behave like checkpoints.
+
+- model1: initialized with model1-ext1-ext1 and inserted a layer at 4
+- model2: initialized with model1-ext1-ext2 and inserted a layer at 4
+- model3: initialized with model1-ext2-ext1 and inserted a layer at 4
+- model4: initialized with model1-ext2-ext2 and inserted a layer at 4
+- model5: initialized with model2-ext1-ext1 and inserted a layer at 4
+- model6: initialized with model2-ext1-ext2 and inserted a layer at 4
+- model7: initialized with model2-ext2-ext1 and inserted a layer at 4
+- model8: initialized with model2-ext2-ext2 and inserted a layer at 4
+- model9: has the same size and architecture, but initialized from scratch
+
+I have trained each model for 1300 steps (1000 for model9). Below is the losses.
+
+- model1
+  - initial loss: 6.738
+  - step 300, 301, 302: 4.087, 4.059, 4.054
+  - step 600, 601, 602: 3.781, 3.827, 3.706
+  - step 900, 901, 902: 3.544, 3.479, 3.485
+  - step 1200, 1201, 1202: 3.365, 3.369, 3.480
+  - last 3 losses: 3.393, 3.377, 3.260
+- model2
+  - initial loss: 6.7512
+  - step 300, 301, 302: 4.089, 4.106, 4.073
+  - step 600, 601, 602: 3.802, 3.704, 3.693
+  - step 900, 901, 902: 3.672, 3.458, 3.665
+  - step 1200, 1201, 1202: 3.530, 3.509, 3.478
+  - last 3 losses: 3.386, 3.408, 3.407
+- model3
+  - initial loss: 6.731
+  - step 300, 301, 302: 4.170, 4.143, 4.126
+  - step 600, 601, 602: 3.720, 3.742, 3.611
+  - step 1200, 1201, 1202: 3.415, 3.295, 3.436
+  - last 3 losses: 3.412, 3.266, 3.477
+- model4
+  - initial loss: 6.744
+  - step 300, 301, 302: 4.091, 4.004, 3.946
+  - step 600, 601, 602: 3.766, 3.682, 3.688
+  - step 900, 901, 902: 3.519, 3.461, 3.616
+  - step 1200, 1201, 1202: 3.318, 3.486, 3.342
+  - last 3 losses: 3.440, 3.394, 3.556
+- model5
+  - initial loss: 6.742
+  - step 300, 301, 302: 4.069, 4.016, 4.149
+  - step 600, 601, 602: 3.791, 3.746, 3.648
+  - step 900, 901, 902: 3.626, 3.602, 3.696
+  - step 1200, 1201, 1202: 3.498, 3.496, 3.495
+  - last 3 losses: 3.479, 3.436, 3.493
+- model6
+  - initial loss: 6.732
+  - step 300, 301, 302: 4.042, 4.051, 4.085
+  - step 600, 601, 602: 3.741, 3.679, 3.896
+  - step 900, 901, 902: 3.441, 3.568, 3.595
+  - step 1200, 1201, 1202: 3.481, 3.513, 3.371
+  - last 3 losses: 3.412, 3.445, 3.401
+- model7
+  - initial loss: 6.733
+  - step 300, 301, 302: 4.168, 4.106, 4.136
+  - step 600, 601, 602: 3.707, 3.729, 3.737
+  - step 900, 901, 902: 3.514, 3.549, 3.484
+  - step 1200, 1201, 1202: 3.441, 3.435, 3.610
+  - last 3 losses: 3.343, 3.392, 3.434
+- model8
+  - initial loss: 6.741
+  - step 300, 301, 302: 4.090, 4.153, 4.120
+  - step 600, 601, 602: 3.771, 3.787, 3.713
+  - step 900, 901, 902: 3.622, 3.651, 3.573
+  - step 1200, 1201, 1202: 3.430, 3.319, 3.492
+  - last 3 losses: 3.318, 3.507, 3.408
+- model9
+  - initial loss: 6.723
+  - step 300, 301, 302: 6.192, 6.189, 6.221
+  - step 600, 601, 602: 6.225, 6.173, 6.214
+  - step 900, 901, 902: 6.219, 6.213, 6.199
+
+Result
+
+1. I can't find much difference between model1 ~ model8. I expected one or two models to excel the others, but they didn't.
+2. model1 ~ model8 converges much faster than model9. I doubt model9 will ever reach loss below 5, so I just terminated the training.
+
+Let's insert a layer and continue training! You can see the process in `exp40.nu`.
 
 # 41. A lot of small heads (failed)
 
