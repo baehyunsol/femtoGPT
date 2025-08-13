@@ -464,6 +464,43 @@ fn run() -> Result<(), Error> {
             println!("{}", tokenizer.untokenize(&inference));
             Ok(())
         },
+        // TODO: maybe replace the actual `infer` functionality with this?
+        Some("alter-infer") => {
+            let parsed_args = ArgParser::new()
+                .arg_flag_with_default("--model", "model.dat", ArgType::String)  // path
+                .arg_flag_with_default("--temperature", "0.5", ArgType::float_between(Some(0.0), Some(1.0)))
+                .args(ArgType::String, ArgCount::Exact(1))
+                .parse(&args, 2)?;
+
+            let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
+            let temperature = parsed_args.arg_flags.get("--temperature").unwrap().parse::<f32>().unwrap();
+            let prompt = parsed_args.get_args_exact(1)?[0].to_string();
+
+            let bytes = read_bytes(&model_path)?;
+            let model: Model = bincode::deserialize(&bytes)?;
+            let tokenizer = Tokenizer::from_inner(model.tokenizer.clone());
+            let mut tokens = tokenizer.tokenize(&prompt);
+
+            for _ in 0..40 {
+                println!("--------------");
+                println!("input: {:?}", tokenizer.untokenize(&tokens));
+                let r = model.alter_infer(&tokens);
+
+                for i in 0..5 {
+                    println!(
+                        "({}, {:?}): {:.2}%",
+                        r[i].0,
+                        tokenizer.untokenize(&[r[i].0]),
+                        r[i].1 * 100.0,
+                    );
+                }
+
+                // TODO: impl temperature
+                tokens.push(r[0].0);
+            }
+
+            Ok(())
+        },
         Some("train") => {
             let parsed_args = ArgParser::new()
                 .arg_flag_with_default("--model", "model.dat", ArgType::String)  // path
