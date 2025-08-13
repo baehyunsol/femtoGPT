@@ -1062,6 +1062,55 @@ fn run() -> Result<(), Error> {
 
             Ok(())
         },
+        // There was an issue with keys and values. So, in order to use old models, you might
+        // have to swap their key matrices and value matrices.
+        Some("swap_kq") => {
+            let parsed_args = ArgParser::new()
+                .arg_flag_with_default("--input", "model.dat", ArgType::String)  // path
+                .arg_flag_with_default("--output", "inserted.dat", ArgType::String)  // path
+                .arg_flag_with_default("--insert-at", "1", ArgType::uinteger())
+                .args(ArgType::String, ArgCount::None)
+                .parse(&args, 2)?;
+
+            // TODO: add doc
+
+            let input_path = parsed_args.arg_flags.get("--input").unwrap().to_string();
+            let output_path = parsed_args.arg_flags.get("--output").unwrap().to_string();
+
+            let bytes = read_bytes(&input_path)?;
+            let mut model: Model = bincode::deserialize(&bytes).unwrap();
+
+            let Hyperparameters {
+                num_layers,
+                num_heads,
+                ..
+            } = model.hyperparameters;
+            let mut new_tensors = model.training_state.tensors.clone();
+
+            for layer in 0..num_layers {
+                for head in 0..num_heads {
+                    let tmp = new_tensors.get(&format!("head_{layer}_{head}_k")).unwrap().clone();
+                    new_tensors.insert(
+                        format!("head_{layer}_{head}_k"),
+                        new_tensors.get(&format!("head_{layer}_{head}_q")).unwrap().clone(),
+                    );
+                    new_tensors.insert(
+                        format!("head_{layer}_{head}_q"),
+                        tmp,
+                    );
+                }
+            }
+
+            model.training_state.tensors = new_tensors;
+            let bytes = bincode::serialize(&model)?;
+            write_bytes(
+                &output_path,
+                &bytes,
+                WriteMode::Atomic,
+            )?;
+
+            Ok(())
+        },
         Some("insert-layer") => {
             let parsed_args = ArgParser::new()
                 .arg_flag_with_default("--input", "model.dat", ArgType::String)  // path

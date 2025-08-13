@@ -209,8 +209,8 @@ impl<G: Graph> GPT<G> {
                 )?;
                 let v = g.call(MatMul::new(), &[norm_inp, v_params])?;
 
-                let q_t = g.call(Transpose::new(), &[q])?;
-                let kq = g.call(MatMul::new(), &[k, q_t])?;
+                let k_t = g.call(Transpose::new(), &[k])?;
+                let kq = g.call(MatMul::new(), &[q, k_t])?;
 
                 let head_size_sqrt_inv = (head_size as f32).powf(-0.5);
                 let kq_coeff = g.call(Coeff::new(head_size_sqrt_inv), &[kq])?;
