@@ -193,8 +193,9 @@ fn run() -> Result<(), Error> {
                 "ascii" => Tokenizer::ascii(case_sensitive),
                 "char" => {
                     let mut config = BpeConfig::default();
-                    config.vocab_size = 2048;
-                    config.char_vocab_size = Some(2048);
+                    // TODO: if the dataset has more than 8192 unique characters, it'd miss the tail
+                    config.vocab_size = 8192;
+                    config.char_vocab_size = Some(8192);
                     config.case_sensitive = case_sensitive;
                     let char_count = count_chars(&tokenizer_data, config.unit)?;
                     Tokenizer::from_inner(TokenizerInner::from_char_count(&char_count, &config))
@@ -633,7 +634,7 @@ fn run() -> Result<(), Error> {
                 .arg_flag_with_default("--dataset", "dataset.txt", ArgType::String)  // path
                 .arg_flag_with_default("--tokenizer-data", "tokenizer.json", ArgType::String)  // path
                 .arg_flag_with_default("--reserve-tokens", "0", ArgType::uinteger())
-                .arg_flag_with_default("--vocab-size", "768", ArgType::integer_between(Some(256), None))
+                .arg_flag_with_default("--vocab-size", "768", ArgType::integer_between(Some(64), None))
                 .args(ArgType::String, ArgCount::None)
                 .parse(&args, 2)?;
 
@@ -647,18 +648,39 @@ fn run() -> Result<(), Error> {
             let tokenizer_data = parsed_args.arg_flags.get("--tokenizer-data").unwrap().to_string();
             let reserve_tokens = parsed_args.arg_flags.get("--reserve-tokens").unwrap().parse().unwrap();
             let vocab_size = parsed_args.arg_flags.get("--vocab-size").unwrap().parse::<usize>().unwrap();
-            let epoch = (vocab_size / 10).max(5) + 1;
 
+            // Usually, there are 4 sets of tokens.
+            // A. Single character token that appears often.
+            // B. Single character token that appears rarely.
+            // C. Multi character token that appears often.
+            // D. Multi character token that appears rarely.
+            //
+            // `vocab_size` is `A.len() + B.len() + C.len() + D.len()`. `A` will always be in the
+            // dictionary (unless `vocab_size < A.len()`). `D` will not be in the dictionary unless
+            // `vocab_size` is really big. But the ratio of `B.len() / C.len()` heavily depends on
+            // how I implement the bpe training procedure.
+            //
+            // Historically, I included less `B` tokens in the dictionary and more `C` tokens.
+            // A `C` token usually consists of characters in `A` set. So it leads to a lot of
+            // `<unk>` tokens in the corpus. Also, it takes much longer to find `C` tokens than
+            // `B` tokens.
+            //
+            // So I changed it. It first fills the dictionary with `A` and `B` tokens. If there's
+            // still a room in the dictionary, it fills the remaining with `C` tokens. Otherwise,
+            // it generates a very small number of `C` tokens and discards the same number of
+            // `B` tokens. The generated `C` tokens are extremely-often appearing tokens, which are very
+            // helpful.
             let mut config = BpeConfig::default();
             config.vocab_size = vocab_size;
-            config.char_vocab_size = Some(vocab_size / 2);
+            config.char_vocab_size = Some(vocab_size - 10);
             config.case_sensitive = case_sensitive;
             let char_count = count_chars(&dataset, config.unit)?;
             let mut tokenizer = TokenizerInner::from_char_count(&char_count, &config);
 
             let max_corpus_size = 1 << 24;
+            let mut trim_count = 0;
 
-            for i in 0..epoch {
+            for i in 0..usize::MAX {
                 let corpus = if is_dir(&dataset) {
                     get_corpus(&dataset, max_corpus_size)?
                 } else {
@@ -666,12 +688,16 @@ fn run() -> Result<(), Error> {
                 };
                 tokenizer.train(&corpus, 10);
 
-                if i % 4 == 0 {
-                    tokenizer.trim_tail(&dataset, &config, None)?;
+                if i % 5 == 0 {
+                    trim_count += tokenizer.trim_tail(&dataset, &config, None)?;
                 }
 
                 tokenizer.compact();
                 println!("Vocab-size: {} tokens", tokenizer.len());
+
+                if trim_count > vocab_size / 10 {
+                    break;
+                }
             }
 
             tokenizer.trim_tail(&dataset, &config, None)?;

@@ -253,7 +253,7 @@ impl TokenizerInner {
         dataset: &str,
         config: &BpeConfig,
         dump_result_to: Option<String>,
-    ) -> Result<(), Error> {
+    ) -> Result<usize, Error> {  // It returns how many tokens it removed.
         if self.tokens.len() > config.vocab_size {
             let counts = count_tokens(&self, dataset)?;
 
@@ -302,9 +302,13 @@ impl TokenizerInner {
                 removed_tokens.len(),
                 removed_tokens,
             );
+
+            Ok(removed_tokens.len())
         }
 
-        Ok(())
+        else {
+            Ok(0)
+        }
     }
 
     pub fn reserve_tokens(&mut self, count: usize) {
