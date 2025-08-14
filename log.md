@@ -1910,6 +1910,8 @@ Result
 
 Let's insert a layer and continue training! You can see the process in `exp40.nu`.
 
+The training is complete. All the models are trained 1000 extra steps, and they all have losses 2.9 ~ 3.2. I have saved the checkpoints, so that I can use them later.
+
 # 41. A lot of small heads (failed)
 
 - tokenizer: bpe (600 tokens + 40 reserved tokens), case sensitive
