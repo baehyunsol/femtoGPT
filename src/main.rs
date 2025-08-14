@@ -34,6 +34,7 @@ use ragit_fs::{
     write_bytes,
     write_string,
 };
+use rand::Rng;
 use rand::seq::SliceRandom;
 use serde_json::{Map, Value};
 use std::collections::HashMap;
@@ -464,15 +465,17 @@ fn run() -> Result<(), Error> {
             println!("{}", tokenizer.untokenize(&inference));
             Ok(())
         },
-        // TODO: maybe replace the actual `infer` functionality with this?
-        Some("alter-infer") => {
+        // TODO: maybe replace the original `infer` command with this?
+        Some("fast-infer") => {
             let parsed_args = ArgParser::new()
                 .arg_flag_with_default("--model", "model.dat", ArgType::String)  // path
+                .arg_flag_with_default("--count", "100", ArgType::integer_between(Some(1), None))
                 .arg_flag_with_default("--temperature", "0.5", ArgType::float_between(Some(0.0), Some(1.0)))
                 .args(ArgType::String, ArgCount::Exact(1))
                 .parse(&args, 2)?;
 
             let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
+            let count = parsed_args.arg_flags.get("--count").unwrap().parse::<usize>().unwrap();
             let temperature = parsed_args.arg_flags.get("--temperature").unwrap().parse::<f32>().unwrap();
             let prompt = parsed_args.get_args_exact(1)?[0].to_string();
 
@@ -480,23 +483,48 @@ fn run() -> Result<(), Error> {
             let model: Model = bincode::deserialize(&bytes)?;
             let tokenizer = Tokenizer::from_inner(model.tokenizer.clone());
             let mut tokens = tokenizer.tokenize(&prompt);
+            let mut cache = femto_gpt::infer::Cache::new();
+            let mut rng = rand::thread_rng();
+            print!("{prompt}");
 
-            for _ in 0..40 {
-                println!("--------------");
-                println!("input: {:?}", tokenizer.untokenize(&tokens));
-                let r = model.alter_infer(&tokens);
+            for i in 0..count {
+                // println!("--------------");
+                // println!("input: {:?}", tokenizer.untokenize(&tokens));
+                let r = model.infer_step(&tokens, cache);
+                cache = r.cache;
+                print!("{}", tokenizer.untokenize(&[r.logit[0].0]));
 
-                for i in 0..5 {
-                    println!(
-                        "({}, {:?}): {:.2}%",
-                        r[i].0,
-                        tokenizer.untokenize(&[r[i].0]),
-                        r[i].1 * 100.0,
-                    );
+                if i % 4 == 0 {
+                    std::io::stdout().flush().unwrap();
                 }
 
+                // for i in 0..5 {
+                //     println!(
+                //         "({}, {:?}): {:.2}%",
+                //         r[i].0,
+                //         tokenizer.untokenize(&[r[i].0]),
+                //         r[i].1 * 100.0,
+                //     );
+                // }
+
                 // TODO: impl temperature
-                tokens.push(r[0].0);
+                let dice = rng.gen_range(0.0..temperature);
+                let mut accum = 0.0;
+                let mut broken = false;
+
+                for (id, t) in r.logit.iter() {
+                    accum += t;
+
+                    if dice < accum {
+                        tokens.push(*id);
+                        broken = true;
+                        break;
+                    }
+                }
+
+                if !broken {
+                    tokens.push(r.logit[0].0);
+                }
             }
 
             Ok(())
