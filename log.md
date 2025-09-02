@@ -2045,3 +2045,46 @@ Evaluations:
   - input: `cfkqqt;`, output: `aglrru;`, `bdhssv;` (success)
 
 Again, intializing a model with `model1-ext1-ext2`'s parameter gives me a much better model than initializing one from scratch.
+
+# 44. Further training the foundation model
+
+I have used checkpoints in exp40 to train models with private dataset, and I found the foundation models are extremely useful! I want to insert more layers to them.
+
+# 45. deep vs wide model
+
+I'm training (emb 324, layer 4, head 9) model... (`model-wide.dat`). Compare this with `model-deep.dat`!
+
+- wide model (emb 324, layer 4, head 9)
+  - steps 2937, loss 3.3 ~ 3.7
+- deep model (init with exp44 model1)
+  - steps 3130, loss 2.9 ~ 3.1
+
+The deeper one is better, but I'm not sure whether it's because 1) it's deeper or 2) it's initialized from a foundation model.
+
+# 46. an incremental training
+
+Some lessons from previous exps: I initialized a lot of (usually 8 or 9) models because I thought initialization (which is purely random) affects the overall result. But I found out that in more than 90% of cases, I get the same output if I use the same recipe. So I've decided to decrease the number of models. I'll train models with the same recipe twice, and choose a better one.
+
+I found a nice paper: https://arxiv.org/abs/2411.18700v1
+
+It's about incremental training (starting with a shallow model and insert layers as the training continues). It says there are pros and cons in incremental training. Let's try incremental-training a very deep model!
+
+settings: it starts with (emb_degree = 288, layers = 4, heads = 12, tokens = 324, pos_enc = none, tokenizer = char). I'm using the same dataset as exp40. I'll incrementally insert layers as the training continues.
+
+Strategy:
+
+1. train a model for N steps
+2. clone the model, insert a layer, and train the 2 models for N steps
+3. choose a model with a smaller loss among the models from step 2
+4. go back to step 2
+
+I'm doing step 3 manually because I'm too lazy to write a script. I sometimes squash step 3.
+
+You can check the entire process at `exp46.nu`.
+
+Another idea: merge input and output of step 2. Here's how merging works. Let's say there are 6 layers, layer-7 is newly inserted, and trained.
+
+1. The models both have layer-1 ~ layer-6, but the parameters are different. layer-N of the merged model is an average of layer-N of the input and layer-N of the output.
+2. Only the output has layer-7. The merged model inherits layer-7 of the output.
+
+By doing this, we can slow down the training of lower layers.
