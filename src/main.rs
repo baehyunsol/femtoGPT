@@ -1060,7 +1060,7 @@ fn run() -> Result<(), Error> {
                 cosine_by_token = cosine_by_token.into_iter().rev().collect();
             }
 
-            for (token_id, token, head_i, cosine) in &cosine_by_token[..limit.min(cosine_by_key.len())] {
+            for (token_id, token, head_i, cosine) in &cosine_by_token[..limit.min(cosine_by_token.len())] {
                 println!("token_id: {token_id}, token: {token:?}, head: {head_i}, cosine: {cosine:.6}");
             }
 
