@@ -2088,3 +2088,11 @@ Another idea: merge input and output of step 2. Here's how merging works. Let's 
 2. Only the output has layer-7. The merged model inherits layer-7 of the output.
 
 By doing this, we can slow down the training of lower layers.
+
+TODO: in order to check if incremental training actually works, I have to train 2 more models
+
+1. (288, 4, 12) model without incremental training
+2. (288, 12, 12) model without incremental training
+
+If 1 and exp46 aren't that different, something's really wrong: adding layers has no effect at all.
+If 2 and exp46 aren't that different, adding layers is beneficial but incremental training has no advantage.

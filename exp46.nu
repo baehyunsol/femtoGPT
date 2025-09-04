@@ -1322,7 +1322,9 @@ cargo run --release -- insert-layer --input model-l8-1.dat --output model-l9-2.d
 cargo run --release -- insert-layer --input model-l8-2.dat --output model-l9-3.dat --insert-at 8;
 cargo run --release -- insert-layer --input model-l8-2.dat --output model-l9-4.dat --insert-at 8;
 
-for _ in 0..8 {
+# NOTE: a step takes roughly 25 ~ 35 seconds on M3 Pro
+# NOTE: It has to be `_ in 0..8`, but I didn't have enough time so I Ctrl+C before the last iteration.
+for _ in 0..7 {
     cargo run --release -- train --model model-l9-1.dat --steps 31;
     sleep 200sec;
     cargo run --release -- train --model model-l9-2.dat --steps 31;
@@ -1330,5 +1332,1241 @@ for _ in 0..8 {
     cargo run --release -- train --model model-l9-3.dat --steps 31;
     sleep 200sec;
     cargo run --release -- train --model model-l9-4.dat --steps 31;
+    sleep 200sec;
+}
+
+# model losses (last 3)
+# model-l9-1: 2.059, 2.335, 2.052
+# model-l9-2: 2.163, 2.148, 2.014
+# model-l9-3: 2.034, 2.132, 2.225
+# model-l9-4: 2.096, 2.150, 2.173
+
+cargo run --release -- compare model-l9-1.dat model-l9-2.dat --limit 100;
+# share layer_0..=layer_7
+# key: proj_8_bias, cosine: -0.146473
+# key: feedforward1_8_bias, cosine: -0.054183
+# key: head_8_1_v, cosine: -0.030292
+# key: head_8_4_q, cosine: -0.022117
+# key: head_8_10_v, cosine: -0.015885
+# key: head_8_6_v, cosine: -0.014373
+# key: head_8_9_k, cosine: -0.011131
+# key: head_8_1_k, cosine: -0.010526
+# key: head_8_5_v, cosine: -0.009948
+# key: head_8_2_k, cosine: -0.009266
+# key: head_8_7_k, cosine: -0.009048
+# key: head_8_4_v, cosine: -0.008160
+# key: head_8_3_k, cosine: -0.008031
+# key: head_8_5_q, cosine: -0.006316
+# key: head_8_6_k, cosine: -0.005149
+# key: head_8_7_v, cosine: -0.005065
+# key: head_8_8_q, cosine: -0.002201
+# key: feedforward1_8_weights, cosine: -0.002171
+# key: head_8_8_v, cosine: -0.001822
+# key: head_8_10_q, cosine: -0.001407
+# key: proj_8_weights, cosine: -0.001308
+# key: head_8_3_q, cosine: -0.001158
+# key: feedforward2_8_weights, cosine: -0.001108
+# key: head_8_2_q, cosine: -0.001055
+# key: head_8_10_k, cosine: 0.000550
+# key: head_8_0_q, cosine: 0.003923
+# key: head_8_4_k, cosine: 0.003959
+# key: head_8_3_v, cosine: 0.004236
+# key: head_8_9_v, cosine: 0.004847
+# key: head_8_11_k, cosine: 0.005961
+# key: head_8_11_q, cosine: 0.006200
+# key: head_8_0_k, cosine: 0.006620
+# key: head_8_0_v, cosine: 0.006704
+# key: norm_8_bias, cosine: 0.006814
+# key: head_8_7_q, cosine: 0.006933
+# key: head_8_5_k, cosine: 0.008112
+# key: head_8_6_q, cosine: 0.008706
+# key: head_8_8_k, cosine: 0.008872
+# key: head_8_1_q, cosine: 0.011886
+# key: head_8_11_v, cosine: 0.013595
+# key: atten_norm_8_coeff, cosine: 0.018291
+# key: head_8_2_v, cosine: 0.021012
+# key: head_8_9_q, cosine: 0.028003
+# key: norm_8_coeff, cosine: 0.051010
+# key: atten_norm_8_bias, cosine: 0.284512
+# key: feedforward2_8_bias, cosine: 0.506225
+# key: proj_7_bias, cosine: 0.682306
+# key: feedforward1_6_bias, cosine: 0.687991
+# key: atten_norm_7_bias, cosine: 0.689236
+# key: feedforward1_5_bias, cosine: 0.696567
+# key: feedforward1_7_bias, cosine: 0.698319
+# key: norm_7_bias, cosine: 0.771400
+# key: feedforward2_7_bias, cosine: 0.773454
+# key: atten_norm_6_bias, cosine: 0.798288
+# key: feedforward2_5_bias, cosine: 0.828782
+# key: atten_norm_5_bias, cosine: 0.835805
+# key: head_7_0_q, cosine: 0.873610
+# key: norm_6_bias, cosine: 0.879760
+# key: feedforward2_6_bias, cosine: 0.882145
+# key: head_7_7_q, cosine: 0.887339
+# key: proj_6_bias, cosine: 0.892503
+# key: head_7_9_q, cosine: 0.898596
+# key: head_7_1_q, cosine: 0.905631
+# key: head_7_0_k, cosine: 0.908006
+# key: head_7_10_q, cosine: 0.909263
+# key: head_7_9_k, cosine: 0.909412
+# key: head_7_5_q, cosine: 0.910131
+# key: head_7_8_q, cosine: 0.910600
+# key: head_7_11_k, cosine: 0.913260
+# key: head_7_11_q, cosine: 0.913439
+# key: head_7_6_k, cosine: 0.915259
+# key: head_7_3_k, cosine: 0.918368
+# key: head_7_7_k, cosine: 0.918584
+# key: head_7_2_q, cosine: 0.919738
+# key: head_7_6_q, cosine: 0.919892
+# key: head_7_3_q, cosine: 0.920921
+# key: head_7_1_k, cosine: 0.925114
+# key: head_7_8_k, cosine: 0.926153
+# key: proj_5_bias, cosine: 0.931111
+# key: head_7_2_k, cosine: 0.931549
+# key: norm_5_bias, cosine: 0.933958
+# key: head_7_5_k, cosine: 0.935098
+# key: feedforward2_7_weights, cosine: 0.936624
+# key: proj_7_weights, cosine: 0.939144
+# key: head_7_10_k, cosine: 0.943191
+# key: atten_norm_7_coeff, cosine: 0.946095
+# key: proj_4_bias, cosine: 0.946220
+# key: head_7_4_k, cosine: 0.946932
+# key: head_7_4_q, cosine: 0.950195
+# key: norm_7_coeff, cosine: 0.952264
+# key: feedforward2_4_bias, cosine: 0.953830
+# key: head_6_10_q, cosine: 0.954462
+# key: head_7_5_v, cosine: 0.955294
+# key: head_7_1_v, cosine: 0.955582
+# key: head_7_6_v, cosine: 0.956726
+# key: head_7_10_v, cosine: 0.956815
+# key: head_7_4_v, cosine: 0.957312
+# key: head_6_7_k, cosine: 0.957326
+# key: proj_6_weights, cosine: 0.957357
+# key: feedforward2_6_weights, cosine: 0.957427
+# token_id: 202, token: "㇓", head: 4, cosine: 0.490262
+# token_id: 106, token: "Ⳇ", head: 8, cosine: 0.492350
+# token_id: 202, token: "㇓", head: 7, cosine: 0.616648
+# token_id: 202, token: "㇓", head: 10, cosine: 0.627962
+# token_id: 420, token: "⁃", head: 0, cosine: 0.642357
+# token_id: 202, token: "㇓", head: 9, cosine: 0.642853
+# token_id: 339, token: "~", head: 9, cosine: 0.649328
+# token_id: 510, token: "、", head: 8, cosine: 0.665311
+# token_id: 202, token: "㇓", head: 6, cosine: 0.677703
+# token_id: 27, token: "·", head: 9, cosine: 0.687249
+# token_id: 202, token: "㇓", head: 3, cosine: 0.700788
+# token_id: 106, token: "Ⳇ", head: 6, cosine: 0.702637
+# token_id: 202, token: "㇓", head: 5, cosine: 0.703557
+# token_id: 202, token: "㇓", head: 1, cosine: 0.711443
+# token_id: 249, token: "ノ", head: 7, cosine: 0.715932
+# token_id: 237, token: "┘", head: 11, cosine: 0.722762
+# token_id: 420, token: "⁃", head: 3, cosine: 0.723021
+# token_id: 202, token: "㇓", head: 8, cosine: 0.725005
+# token_id: 27, token: "·", head: 7, cosine: 0.726284
+# token_id: 136, token: "⚠", head: 6, cosine: 0.728533
+# token_id: 496, token: "▸", head: 3, cosine: 0.732131
+# token_id: 106, token: "Ⳇ", head: 0, cosine: 0.737926
+# token_id: 77, token: "┯", head: 11, cosine: 0.740001
+# token_id: 106, token: "Ⳇ", head: 4, cosine: 0.740119
+# token_id: 510, token: "、", head: 0, cosine: 0.741669
+# token_id: 496, token: "▸", head: 1, cosine: 0.743487
+# token_id: 202, token: "㇓", head: 0, cosine: 0.745848
+# token_id: 249, token: "ノ", head: 9, cosine: 0.749165
+# token_id: 27, token: "·", head: 5, cosine: 0.750719
+# token_id: 136, token: "⚠", head: 3, cosine: 0.754531
+# token_id: 106, token: "Ⳇ", head: 3, cosine: 0.757060
+# token_id: 400, token: "└", head: 11, cosine: 0.758379
+# token_id: 420, token: "⁃", head: 5, cosine: 0.763827
+# token_id: 68, token: "@", head: 3, cosine: 0.764955
+# token_id: 106, token: "Ⳇ", head: 7, cosine: 0.767027
+# token_id: 400, token: "└", head: 9, cosine: 0.770900
+# token_id: 416, token: "►", head: 2, cosine: 0.771473
+# token_id: 114, token: "┬", head: 0, cosine: 0.773981
+# token_id: 119, token: "⊃", head: 11, cosine: 0.774415
+# token_id: 114, token: "┬", head: 8, cosine: 0.774502
+# token_id: 27, token: "·", head: 4, cosine: 0.775451
+# token_id: 77, token: "┯", head: 0, cosine: 0.775571
+# token_id: 217, token: "−", head: 10, cosine: 0.777839
+# token_id: 420, token: "⁃", head: 7, cosine: 0.779633
+# token_id: 106, token: "Ⳇ", head: 5, cosine: 0.781894
+# token_id: 159, token: "™", head: 8, cosine: 0.782112
+# token_id: 106, token: "Ⳇ", head: 10, cosine: 0.782451
+# token_id: 249, token: "ノ", head: 2, cosine: 0.782901
+# token_id: 400, token: "└", head: 3, cosine: 0.783040
+# token_id: 420, token: "⁃", head: 1, cosine: 0.784333
+# token_id: 510, token: "、", head: 2, cosine: 0.785552
+# token_id: 27, token: "·", head: 1, cosine: 0.786295
+# token_id: 198, token: "﹘", head: 5, cosine: 0.788077
+# token_id: 202, token: "㇓", head: 2, cosine: 0.788418
+# token_id: 106, token: "Ⳇ", head: 9, cosine: 0.788533
+# token_id: 505, token: "‒", head: 0, cosine: 0.789309
+# token_id: 237, token: "┘", head: 9, cosine: 0.791297
+# token_id: 237, token: "┘", head: 7, cosine: 0.792933
+# token_id: 106, token: "Ⳇ", head: 2, cosine: 0.793784
+# token_id: 119, token: "⊃", head: 3, cosine: 0.795944
+# token_id: 114, token: "┬", head: 2, cosine: 0.795998
+# token_id: 29, token: "─", head: 11, cosine: 0.796510
+# token_id: 202, token: "㇓", head: 11, cosine: 0.796942
+# token_id: 438, token: "┌", head: 7, cosine: 0.797691
+# token_id: 159, token: "™", head: 11, cosine: 0.798518
+# token_id: 77, token: "┯", head: 1, cosine: 0.799265
+# token_id: 29, token: "─", head: 4, cosine: 0.802034
+# token_id: 276, token: "Ⲻ", head: 6, cosine: 0.803550
+# token_id: 383, token: "ー", head: 8, cosine: 0.807811
+# token_id: 136, token: "⚠", head: 1, cosine: 0.809000
+# token_id: 416, token: "►", head: 10, cosine: 0.810362
+# token_id: 332, token: "⧸", head: 5, cosine: 0.811573
+# token_id: 383, token: "ー", head: 1, cosine: 0.811762
+# token_id: 219, token: "丿", head: 4, cosine: 0.811828
+# token_id: 114, token: "┬", head: 7, cosine: 0.813392
+# token_id: 505, token: "‒", head: 11, cosine: 0.813692
+# token_id: 198, token: "﹘", head: 6, cosine: 0.813752
+# token_id: 30, token: "〳", head: 10, cosine: 0.814053
+# token_id: 77, token: "┯", head: 4, cosine: 0.814151
+# token_id: 237, token: "┘", head: 6, cosine: 0.814167
+# token_id: 119, token: "⊃", head: 9, cosine: 0.814282
+# token_id: 332, token: "⧸", head: 7, cosine: 0.814888
+# token_id: 276, token: "Ⲻ", head: 2, cosine: 0.817617
+# token_id: 436, token: "╭", head: 9, cosine: 0.818149
+# token_id: 237, token: "┘", head: 1, cosine: 0.818269
+# token_id: 27, token: "·", head: 2, cosine: 0.819084
+# token_id: 49, token: "۔", head: 4, cosine: 0.819159
+# token_id: 303, token: "%", head: 6, cosine: 0.819505
+# token_id: 119, token: "⊃", head: 1, cosine: 0.821011
+# token_id: 198, token: "﹘", head: 10, cosine: 0.821043
+# token_id: 420, token: "⁃", head: 9, cosine: 0.821205
+# token_id: 136, token: "⚠", head: 11, cosine: 0.821237
+# token_id: 436, token: "╭", head: 8, cosine: 0.823168
+# token_id: 249, token: "ノ", head: 0, cosine: 0.823881
+# token_id: 237, token: "┘", head: 3, cosine: 0.824853
+# token_id: 339, token: "~", head: 11, cosine: 0.825529
+# token_id: 119, token: "⊃", head: 4, cosine: 0.825731
+# token_id: 505, token: "‒", head: 1, cosine: 0.826247
+# token_id: 510, token: "、", head: 3, cosine: 0.826790
+# token_id: 170, token: "\\", head: 10, cosine: 0.827261
+
+cargo run --release -- compare model-l9-1.dat model-l9-3.dat --limit 100;
+# share layer_0..=layer_6
+# key: norm_8_bias, cosine: -0.074359
+# key: head_7_1_k, cosine: -0.031946
+# key: atten_norm_8_coeff, cosine: -0.028345
+# key: norm_7_bias, cosine: -0.026255
+# key: feedforward1_7_bias, cosine: -0.022972
+# key: head_7_4_v, cosine: -0.022847
+# key: head_7_8_q, cosine: -0.022635
+# key: head_8_8_q, cosine: -0.021669
+# key: head_8_10_k, cosine: -0.019454
+# key: head_8_1_v, cosine: -0.017496
+# key: head_8_0_v, cosine: -0.015338
+# key: head_8_10_v, cosine: -0.015316
+# key: head_7_10_v, cosine: -0.014855
+# key: head_7_6_k, cosine: -0.010360
+# key: head_7_2_k, cosine: -0.009477
+# key: head_7_7_v, cosine: -0.008780
+# key: head_7_7_k, cosine: -0.007589
+# key: head_8_2_k, cosine: -0.007558
+# key: head_8_5_v, cosine: -0.007348
+# key: head_8_6_k, cosine: -0.006719
+# key: head_7_11_v, cosine: -0.006602
+# key: feedforward1_8_bias, cosine: -0.006358
+# key: head_7_0_v, cosine: -0.005979
+# key: head_8_11_k, cosine: -0.005912
+# key: head_7_10_k, cosine: -0.005280
+# key: head_7_6_v, cosine: -0.005267
+# key: proj_8_bias, cosine: -0.005143
+# key: head_7_5_k, cosine: -0.004895
+# key: head_8_2_q, cosine: -0.004039
+# key: head_8_3_q, cosine: -0.002774
+# key: head_8_2_v, cosine: -0.002600
+# key: feedforward1_8_weights, cosine: -0.002409
+# key: head_7_3_q, cosine: -0.002336
+# key: head_8_7_k, cosine: -0.002219
+# key: feedforward1_7_weights, cosine: -0.002124
+# key: head_7_2_q, cosine: -0.001700
+# key: feedforward2_7_weights, cosine: -0.001282
+# key: head_8_7_v, cosine: -0.001072
+# key: head_7_5_q, cosine: -0.001068
+# key: head_8_4_q, cosine: -0.000515
+# key: head_7_0_k, cosine: -0.000108
+# key: head_7_7_q, cosine: 0.000210
+# key: feedforward2_8_weights, cosine: 0.000623
+# key: head_7_5_v, cosine: 0.000695
+# key: head_8_6_q, cosine: 0.000798
+# key: head_8_5_q, cosine: 0.000845
+# key: head_7_9_k, cosine: 0.000880
+# key: head_7_4_q, cosine: 0.000908
+# key: head_7_11_q, cosine: 0.001207
+# key: head_7_9_q, cosine: 0.001825
+# key: head_7_3_v, cosine: 0.001894
+# key: head_8_3_k, cosine: 0.002048
+# key: proj_8_weights, cosine: 0.002993
+# key: head_7_9_v, cosine: 0.003649
+# key: head_8_1_k, cosine: 0.003693
+# key: head_7_10_q, cosine: 0.003700
+# key: head_8_7_q, cosine: 0.004056
+# key: head_7_8_v, cosine: 0.004089
+# key: head_7_3_k, cosine: 0.004276
+# key: head_8_9_k, cosine: 0.004679
+# key: head_7_0_q, cosine: 0.005107
+# key: head_7_11_k, cosine: 0.005276
+# key: norm_7_coeff, cosine: 0.006233
+# key: head_8_10_q, cosine: 0.006289
+# key: proj_7_weights, cosine: 0.007062
+# key: head_8_8_v, cosine: 0.007745
+# key: head_7_8_k, cosine: 0.007987
+# key: head_8_6_v, cosine: 0.008151
+# key: head_8_11_q, cosine: 0.008864
+# key: head_7_4_k, cosine: 0.009669
+# key: head_8_3_v, cosine: 0.009811
+# key: head_8_8_k, cosine: 0.010576
+# key: head_8_1_q, cosine: 0.010587
+# key: head_8_4_k, cosine: 0.012321
+# key: head_8_4_v, cosine: 0.012603
+# key: head_7_1_v, cosine: 0.012987
+# key: head_7_6_q, cosine: 0.013173
+# key: head_8_5_k, cosine: 0.015163
+# key: head_8_0_k, cosine: 0.019694
+# key: head_8_9_v, cosine: 0.020590
+# key: head_8_9_q, cosine: 0.020662
+# key: head_8_0_q, cosine: 0.022252
+# key: head_7_2_v, cosine: 0.024291
+# key: head_8_11_v, cosine: 0.026535
+# key: atten_norm_7_coeff, cosine: 0.029035
+# key: head_7_1_q, cosine: 0.031610
+# key: norm_8_coeff, cosine: 0.072374
+# key: proj_7_bias, cosine: 0.130183
+# key: atten_norm_7_bias, cosine: 0.136079
+# key: atten_norm_8_bias, cosine: 0.198885
+# key: feedforward2_8_bias, cosine: 0.351578
+# key: feedforward1_6_bias, cosine: 0.446362
+# key: feedforward1_5_bias, cosine: 0.492607
+# key: feedforward2_7_bias, cosine: 0.497242
+# key: atten_norm_6_bias, cosine: 0.542633
+# key: atten_norm_5_bias, cosine: 0.663493
+# key: feedforward2_6_bias, cosine: 0.675980
+# key: head_6_10_q, cosine: 0.708241
+# key: head_6_9_q, cosine: 0.711442
+# key: norm_6_bias, cosine: 0.728620
+# token_id: 199, token: "┤", head: 1, cosine: 0.212688
+# token_id: 27, token: "·", head: 7, cosine: 0.301342
+# token_id: 199, token: "┤", head: 3, cosine: 0.317228
+# token_id: 114, token: "┬", head: 5, cosine: 0.326069
+# token_id: 199, token: "┤", head: 4, cosine: 0.330520
+# token_id: 267, token: "ï", head: 2, cosine: 0.346274
+# token_id: 114, token: "┬", head: 3, cosine: 0.355140
+# token_id: 111, token: "├", head: 0, cosine: 0.370798
+# token_id: 114, token: "┬", head: 7, cosine: 0.394114
+# token_id: 266, token: "╰", head: 2, cosine: 0.427661
+# token_id: 27, token: "·", head: 9, cosine: 0.430715
+# token_id: 341, token: "’", head: 8, cosine: 0.441980
+# token_id: 267, token: "ï", head: 10, cosine: 0.448044
+# token_id: 27, token: "·", head: 5, cosine: 0.469763
+# token_id: 267, token: "ï", head: 5, cosine: 0.477729
+# token_id: 114, token: "┬", head: 9, cosine: 0.491175
+# token_id: 267, token: "ï", head: 1, cosine: 0.492011
+# token_id: 148, token: "╾", head: 2, cosine: 0.492144
+# token_id: 341, token: "’", head: 6, cosine: 0.492850
+# token_id: 199, token: "┤", head: 5, cosine: 0.507238
+# token_id: 27, token: "·", head: 10, cosine: 0.522121
+# token_id: 199, token: "┤", head: 9, cosine: 0.523905
+# token_id: 267, token: "ï", head: 0, cosine: 0.526266
+# token_id: 254, token: "€", head: 2, cosine: 0.529430
+# token_id: 148, token: "╾", head: 0, cosine: 0.533440
+# token_id: 89, token: "ß", head: 3, cosine: 0.536677
+# token_id: 27, token: "·", head: 4, cosine: 0.537180
+# token_id: 341, token: "’", head: 7, cosine: 0.545816
+# token_id: 114, token: "┬", head: 2, cosine: 0.550699
+# token_id: 209, token: "┃", head: 4, cosine: 0.550775
+# token_id: 372, token: "┙", head: 11, cosine: 0.551652
+# token_id: 114, token: "┬", head: 6, cosine: 0.552504
+# token_id: 111, token: "├", head: 7, cosine: 0.553072
+# token_id: 114, token: "┬", head: 8, cosine: 0.553863
+# token_id: 457, token: "Ü", head: 0, cosine: 0.558626
+# token_id: 199, token: "┤", head: 6, cosine: 0.561752
+# token_id: 27, token: "·", head: 2, cosine: 0.567368
+# token_id: 375, token: "”", head: 5, cosine: 0.570053
+# token_id: 180, token: "✕", head: 4, cosine: 0.576108
+# token_id: 367, token: "╴", head: 9, cosine: 0.576991
+# token_id: 114, token: "┬", head: 4, cosine: 0.582226
+# token_id: 148, token: "╾", head: 5, cosine: 0.586514
+# token_id: 457, token: "Ü", head: 11, cosine: 0.586855
+# token_id: 267, token: "ï", head: 11, cosine: 0.589046
+# token_id: 114, token: "┬", head: 11, cosine: 0.591609
+# token_id: 267, token: "ï", head: 3, cosine: 0.594569
+# token_id: 266, token: "╰", head: 6, cosine: 0.596823
+# token_id: 199, token: "┤", head: 10, cosine: 0.597998
+# token_id: 199, token: "┤", head: 7, cosine: 0.598081
+# token_id: 294, token: "Z", head: 3, cosine: 0.601734
+# token_id: 209, token: "┃", head: 3, cosine: 0.605430
+# token_id: 209, token: "┃", head: 10, cosine: 0.605577
+# token_id: 180, token: "✕", head: 0, cosine: 0.605919
+# token_id: 199, token: "┤", head: 8, cosine: 0.607221
+# token_id: 341, token: "’", head: 10, cosine: 0.607415
+# token_id: 438, token: "┌", head: 3, cosine: 0.610650
+# token_id: 129, token: "﴿", head: 7, cosine: 0.612366
+# token_id: 27, token: "·", head: 1, cosine: 0.612632
+# token_id: 199, token: "┤", head: 0, cosine: 0.617741
+# token_id: 209, token: "┃", head: 11, cosine: 0.618340
+# token_id: 254, token: "€", head: 1, cosine: 0.620926
+# token_id: 341, token: "’", head: 5, cosine: 0.624175
+# token_id: 343, token: "🌸", head: 8, cosine: 0.627255
+# token_id: 341, token: "’", head: 0, cosine: 0.632050
+# token_id: 341, token: "’", head: 1, cosine: 0.634205
+# token_id: 148, token: "╾", head: 3, cosine: 0.634482
+# token_id: 148, token: "╾", head: 1, cosine: 0.635858
+# token_id: 305, token: "µ", head: 1, cosine: 0.637244
+# token_id: 114, token: "┬", head: 0, cosine: 0.637390
+# token_id: 267, token: "ï", head: 4, cosine: 0.639828
+# token_id: 341, token: "’", head: 9, cosine: 0.639857
+# token_id: 209, token: "┃", head: 6, cosine: 0.640422
+# token_id: 209, token: "┃", head: 0, cosine: 0.642572
+# token_id: 180, token: "✕", head: 1, cosine: 0.644225
+# token_id: 266, token: "╰", head: 1, cosine: 0.644359
+# token_id: 111, token: "├", head: 5, cosine: 0.644767
+# token_id: 148, token: "╾", head: 6, cosine: 0.645887
+# token_id: 127, token: "ö", head: 4, cosine: 0.647249
+# token_id: 209, token: "┃", head: 9, cosine: 0.647709
+# token_id: 209, token: "┃", head: 5, cosine: 0.647943
+# token_id: 111, token: "├", head: 10, cosine: 0.649423
+# token_id: 27, token: "·", head: 0, cosine: 0.651732
+# token_id: 254, token: "€", head: 8, cosine: 0.653814
+# token_id: 33, token: "和", head: 0, cosine: 0.655825
+# token_id: 457, token: "Ü", head: 7, cosine: 0.656881
+# token_id: 111, token: "├", head: 3, cosine: 0.658369
+# token_id: 111, token: "├", head: 1, cosine: 0.658855
+# token_id: 100, token: "Ö", head: 4, cosine: 0.658887
+# token_id: 266, token: "╰", head: 8, cosine: 0.661542
+# token_id: 294, token: "Z", head: 7, cosine: 0.662302
+# token_id: 127, token: "ö", head: 0, cosine: 0.664360
+# token_id: 254, token: "€", head: 5, cosine: 0.665820
+# token_id: 438, token: "┌", head: 4, cosine: 0.667206
+# token_id: 27, token: "·", head: 6, cosine: 0.668465
+# token_id: 148, token: "╾", head: 11, cosine: 0.668934
+# token_id: 148, token: "╾", head: 4, cosine: 0.670402
+# token_id: 209, token: "┃", head: 1, cosine: 0.670989
+# token_id: 496, token: "▸", head: 8, cosine: 0.671440
+# token_id: 267, token: "ï", head: 7, cosine: 0.671838
+# token_id: 129, token: "﴿", head: 8, cosine: 0.672414
+
+cargo run --release -- compare model-l9-1.dat model-l9-4.dat --limit 100;
+# share layer_0..=layer_6
+# key: norm_8_bias, cosine: -0.109985
+# key: norm_7_bias, cosine: -0.053509
+# key: head_7_1_k, cosine: -0.024090
+# key: head_7_4_v, cosine: -0.022650
+# key: proj_7_bias, cosine: -0.020517
+# key: head_7_8_q, cosine: -0.019946
+# key: head_8_2_k, cosine: -0.018468
+# key: head_8_8_k, cosine: -0.017322
+# key: head_8_2_v, cosine: -0.016368
+# key: atten_norm_8_coeff, cosine: -0.014895
+# key: head_8_1_v, cosine: -0.014300
+# key: head_7_7_k, cosine: -0.013854
+# key: head_8_6_v, cosine: -0.013657
+# key: head_8_1_q, cosine: -0.013577
+# key: head_8_11_v, cosine: -0.013179
+# key: head_7_5_k, cosine: -0.012895
+# key: head_8_0_v, cosine: -0.011214
+# key: head_7_6_k, cosine: -0.011074
+# key: head_8_10_q, cosine: -0.009656
+# key: head_8_7_v, cosine: -0.009464
+# key: head_7_10_v, cosine: -0.009160
+# key: head_8_9_q, cosine: -0.008832
+# key: head_8_5_k, cosine: -0.008736
+# key: head_7_2_k, cosine: -0.008495
+# key: head_8_8_q, cosine: -0.008293
+# key: head_7_11_q, cosine: -0.007117
+# key: head_8_1_k, cosine: -0.007079
+# key: head_8_3_q, cosine: -0.006694
+# key: head_8_10_k, cosine: -0.006186
+# key: head_8_4_q, cosine: -0.005867
+# key: head_8_0_q, cosine: -0.005851
+# key: head_8_8_v, cosine: -0.005262
+# key: proj_8_weights, cosine: -0.004490
+# key: head_7_2_q, cosine: -0.003998
+# key: head_8_7_q, cosine: -0.003705
+# key: head_7_9_q, cosine: -0.003573
+# key: head_7_7_v, cosine: -0.003466
+# key: head_7_0_v, cosine: -0.003437
+# key: head_8_4_v, cosine: -0.002970
+# key: head_8_9_v, cosine: -0.002563
+# key: head_7_6_v, cosine: -0.002181
+# key: feedforward1_8_weights, cosine: -0.001774
+# key: feedforward1_7_weights, cosine: -0.001744
+# key: head_7_11_v, cosine: -0.001432
+# key: feedforward2_7_weights, cosine: -0.001069
+# key: feedforward1_7_bias, cosine: -0.000997
+# key: head_7_0_k, cosine: -0.000827
+# key: head_7_9_k, cosine: -0.000642
+# key: head_7_10_k, cosine: 0.000289
+# key: head_8_3_k, cosine: 0.000514
+# key: head_7_0_q, cosine: 0.001050
+# key: head_7_3_v, cosine: 0.001306
+# key: head_8_11_k, cosine: 0.001390
+# key: head_8_9_k, cosine: 0.001404
+# key: feedforward2_8_weights, cosine: 0.002033
+# key: head_7_5_q, cosine: 0.002096
+# key: head_7_11_k, cosine: 0.002109
+# key: head_7_8_k, cosine: 0.002938
+# key: head_8_4_k, cosine: 0.003818
+# key: head_7_3_k, cosine: 0.003888
+# key: head_7_10_q, cosine: 0.003929
+# key: head_8_6_q, cosine: 0.005502
+# key: head_7_7_q, cosine: 0.005832
+# key: head_7_5_v, cosine: 0.006018
+# key: head_7_3_q, cosine: 0.006279
+# key: head_8_11_q, cosine: 0.006505
+# key: head_8_3_v, cosine: 0.006845
+# key: head_8_6_k, cosine: 0.007580
+# key: head_7_8_v, cosine: 0.007841
+# key: proj_7_weights, cosine: 0.007912
+# key: head_7_4_q, cosine: 0.007914
+# key: head_8_10_v, cosine: 0.008794
+# key: head_7_6_q, cosine: 0.009067
+# key: atten_norm_7_coeff, cosine: 0.009293
+# key: head_8_2_q, cosine: 0.009906
+# key: head_7_9_v, cosine: 0.010006
+# key: head_7_1_v, cosine: 0.011272
+# key: norm_8_coeff, cosine: 0.013333
+# key: head_7_4_k, cosine: 0.015307
+# key: head_7_1_q, cosine: 0.017812
+# key: head_8_5_v, cosine: 0.021291
+# key: head_8_5_q, cosine: 0.021653
+# key: head_7_2_v, cosine: 0.023408
+# key: head_8_7_k, cosine: 0.025376
+# key: head_8_0_k, cosine: 0.027292
+# key: norm_7_coeff, cosine: 0.039174
+# key: feedforward1_8_bias, cosine: 0.044875
+# key: proj_8_bias, cosine: 0.068712
+# key: atten_norm_7_bias, cosine: 0.253110
+# key: atten_norm_8_bias, cosine: 0.287293
+# key: feedforward2_8_bias, cosine: 0.500372
+# key: feedforward1_6_bias, cosine: 0.507600
+# key: atten_norm_6_bias, cosine: 0.531659
+# key: feedforward2_7_bias, cosine: 0.567617
+# key: proj_4_bias, cosine: 0.626987
+# key: feedforward1_5_bias, cosine: 0.637083
+# key: atten_norm_5_bias, cosine: 0.651782
+# key: feedforward2_5_bias, cosine: 0.688971
+# key: head_6_9_q, cosine: 0.701839
+# key: head_6_7_k, cosine: 0.710336
+# token_id: 27, token: "·", head: 7, cosine: 0.301342
+# token_id: 237, token: "┘", head: 7, cosine: 0.350874
+# token_id: 114, token: "┬", head: 3, cosine: 0.372456
+# token_id: 416, token: "►", head: 2, cosine: 0.373435
+# token_id: 114, token: "┬", head: 5, cosine: 0.417283
+# token_id: 27, token: "·", head: 9, cosine: 0.430715
+# token_id: 438, token: "┌", head: 3, cosine: 0.436427
+# token_id: 199, token: "┤", head: 3, cosine: 0.439872
+# token_id: 266, token: "╰", head: 2, cosine: 0.449210
+# token_id: 27, token: "·", head: 5, cosine: 0.469763
+# token_id: 199, token: "┤", head: 5, cosine: 0.491473
+# token_id: 209, token: "┃", head: 4, cosine: 0.492081
+# token_id: 148, token: "╾", head: 2, cosine: 0.492144
+# token_id: 209, token: "┃", head: 0, cosine: 0.495431
+# token_id: 199, token: "┤", head: 4, cosine: 0.506861
+# token_id: 510, token: "、", head: 8, cosine: 0.517130
+# token_id: 367, token: "╴", head: 9, cosine: 0.520353
+# token_id: 27, token: "·", head: 10, cosine: 0.522121
+# token_id: 199, token: "┤", head: 1, cosine: 0.527531
+# token_id: 254, token: "€", head: 2, cosine: 0.529430
+# token_id: 148, token: "╾", head: 0, cosine: 0.533440
+# token_id: 89, token: "ß", head: 3, cosine: 0.536677
+# token_id: 27, token: "·", head: 4, cosine: 0.537180
+# token_id: 372, token: "┙", head: 11, cosine: 0.551652
+# token_id: 457, token: "Ü", head: 0, cosine: 0.558626
+# token_id: 367, token: "╴", head: 2, cosine: 0.565421
+# token_id: 209, token: "┃", head: 6, cosine: 0.565578
+# token_id: 27, token: "·", head: 2, cosine: 0.567368
+# token_id: 209, token: "┃", head: 3, cosine: 0.576639
+# token_id: 114, token: "┬", head: 6, cosine: 0.578916
+# token_id: 341, token: "’", head: 3, cosine: 0.579505
+# token_id: 148, token: "╾", head: 5, cosine: 0.586514
+# token_id: 457, token: "Ü", head: 11, cosine: 0.586855
+# token_id: 114, token: "┬", head: 7, cosine: 0.588743
+# token_id: 375, token: "”", head: 5, cosine: 0.593328
+# token_id: 237, token: "┘", head: 4, cosine: 0.593986
+# token_id: 199, token: "┤", head: 8, cosine: 0.598428
+# token_id: 209, token: "┃", head: 1, cosine: 0.603304
+# token_id: 209, token: "┃", head: 10, cosine: 0.603553
+# token_id: 294, token: "Z", head: 3, cosine: 0.606914
+# token_id: 27, token: "·", head: 1, cosine: 0.612632
+# token_id: 341, token: "’", head: 7, cosine: 0.618090
+# token_id: 254, token: "€", head: 1, cosine: 0.620926
+# token_id: 114, token: "┬", head: 8, cosine: 0.623299
+# token_id: 199, token: "┤", head: 9, cosine: 0.623307
+# token_id: 438, token: "┌", head: 8, cosine: 0.624657
+# token_id: 343, token: "🌸", head: 8, cosine: 0.627255
+# token_id: 237, token: "┘", head: 9, cosine: 0.628315
+# token_id: 438, token: "┌", head: 9, cosine: 0.629272
+# token_id: 338, token: "┗", head: 9, cosine: 0.632162
+# token_id: 114, token: "┬", head: 0, cosine: 0.634011
+# token_id: 341, token: "’", head: 1, cosine: 0.634433
+# token_id: 148, token: "╾", head: 3, cosine: 0.634482
+# token_id: 148, token: "╾", head: 1, cosine: 0.635858
+# token_id: 199, token: "┤", head: 7, cosine: 0.636993
+# token_id: 305, token: "µ", head: 1, cosine: 0.637244
+# token_id: 266, token: "╰", head: 6, cosine: 0.641240
+# token_id: 237, token: "┘", head: 8, cosine: 0.643802
+# token_id: 209, token: "┃", head: 5, cosine: 0.644865
+# token_id: 148, token: "╾", head: 6, cosine: 0.645887
+# token_id: 341, token: "’", head: 9, cosine: 0.649702
+# token_id: 127, token: "ö", head: 4, cosine: 0.650858
+# token_id: 209, token: "┃", head: 9, cosine: 0.651107
+# token_id: 27, token: "·", head: 0, cosine: 0.651732
+# token_id: 199, token: "┤", head: 2, cosine: 0.653807
+# token_id: 254, token: "€", head: 8, cosine: 0.653814
+# token_id: 457, token: "Ü", head: 7, cosine: 0.656881
+# token_id: 352, token: "∧", head: 2, cosine: 0.656967
+# token_id: 237, token: "┘", head: 11, cosine: 0.657698
+# token_id: 510, token: "、", head: 0, cosine: 0.658078
+# token_id: 100, token: "Ö", head: 4, cosine: 0.658887
+# token_id: 341, token: "’", head: 11, cosine: 0.659833
+# token_id: 416, token: "►", head: 10, cosine: 0.660656
+# token_id: 111, token: "├", head: 1, cosine: 0.663312
+# token_id: 254, token: "€", head: 5, cosine: 0.665820
+# token_id: 29, token: "─", head: 4, cosine: 0.668009
+# token_id: 27, token: "·", head: 6, cosine: 0.668465
+# token_id: 204, token: "∨", head: 11, cosine: 0.668643
+# token_id: 266, token: "╰", head: 1, cosine: 0.668745
+# token_id: 148, token: "╾", head: 11, cosine: 0.668934
+# token_id: 127, token: "ö", head: 0, cosine: 0.669622
+# token_id: 199, token: "┤", head: 0, cosine: 0.669671
+# token_id: 148, token: "╾", head: 4, cosine: 0.670402
+# token_id: 355, token: "╿", head: 7, cosine: 0.673225
+# token_id: 148, token: "╾", head: 10, cosine: 0.676028
+# token_id: 237, token: "┘", head: 3, cosine: 0.677216
+# token_id: 305, token: "µ", head: 5, cosine: 0.677594
+# token_id: 341, token: "’", head: 8, cosine: 0.678318
+# token_id: 343, token: "🌸", head: 0, cosine: 0.680242
+# token_id: 496, token: "▸", head: 1, cosine: 0.680898
+# token_id: 204, token: "∨", head: 1, cosine: 0.682378
+# token_id: 111, token: "├", head: 0, cosine: 0.683076
+# token_id: 341, token: "’", head: 10, cosine: 0.683222
+# token_id: 510, token: "、", head: 7, cosine: 0.684933
+# token_id: 372, token: "┙", head: 8, cosine: 0.685659
+# token_id: 209, token: "┃", head: 2, cosine: 0.686817
+# token_id: 341, token: "’", head: 5, cosine: 0.691847
+# token_id: 26, token: "┥", head: 0, cosine: 0.691903
+# token_id: 209, token: "┃", head: 11, cosine: 0.692210
+# token_id: 343, token: "🌸", head: 3, cosine: 0.692360
+
+cargo run --release -- compare model-l9-2.dat model-l9-3.dat --limit 100;
+# share layer_0..=layer_6
+# key: feedforward1_8_bias, cosine: -0.055728
+# key: head_8_11_k, cosine: -0.028827
+# key: head_7_1_k, cosine: -0.028556
+# key: norm_7_bias, cosine: -0.025853
+# key: head_7_8_q, cosine: -0.024066
+# key: head_7_4_v, cosine: -0.023214
+# key: norm_8_coeff, cosine: -0.015925
+# key: head_8_3_k, cosine: -0.015512
+# key: head_8_1_k, cosine: -0.015468
+# key: head_8_8_q, cosine: -0.014300
+# key: head_7_10_v, cosine: -0.014263
+# key: head_8_7_q, cosine: -0.012575
+# key: head_8_6_k, cosine: -0.011684
+# key: head_8_7_k, cosine: -0.011500
+# key: head_7_7_v, cosine: -0.011065
+# key: head_7_0_k, cosine: -0.009809
+# key: head_7_11_v, cosine: -0.009573
+# key: head_8_5_k, cosine: -0.009465
+# key: head_8_0_q, cosine: -0.009027
+# key: head_7_6_v, cosine: -0.008911
+# key: head_7_0_v, cosine: -0.008861
+# key: head_8_10_q, cosine: -0.008733
+# key: head_8_0_v, cosine: -0.008576
+# key: head_8_10_k, cosine: -0.006932
+# key: head_7_6_k, cosine: -0.006544
+# key: head_8_6_q, cosine: -0.006434
+# key: head_8_5_v, cosine: -0.004694
+# key: head_7_7_q, cosine: -0.004658
+# key: head_8_3_v, cosine: -0.004157
+# key: head_7_7_k, cosine: -0.003433
+# key: head_7_2_k, cosine: -0.002507
+# key: head_8_0_k, cosine: -0.002490
+# key: head_7_5_v, cosine: -0.002042
+# key: feedforward1_7_weights, cosine: -0.001759
+# key: head_8_9_v, cosine: -0.001479
+# key: feedforward2_7_weights, cosine: -0.001329
+# key: feedforward1_8_weights, cosine: -0.001300
+# key: head_8_2_v, cosine: -0.001103
+# key: feedforward2_8_weights, cosine: -0.001022
+# key: head_8_6_v, cosine: -0.000824
+# key: head_8_1_v, cosine: -0.000471
+# key: head_7_4_q, cosine: 0.000152
+# key: head_7_10_k, cosine: 0.000170
+# key: head_7_11_q, cosine: 0.000590
+# key: head_7_3_k, cosine: 0.000698
+# key: head_8_11_q, cosine: 0.000756
+# key: head_7_0_q, cosine: 0.000888
+# key: head_7_9_v, cosine: 0.001019
+# key: head_7_10_q, cosine: 0.001303
+# key: head_7_3_v, cosine: 0.001739
+# key: norm_7_coeff, cosine: 0.001775
+# key: head_7_11_k, cosine: 0.002103
+# key: proj_8_weights, cosine: 0.002123
+# key: head_7_5_q, cosine: 0.002194
+# key: head_8_4_v, cosine: 0.002295
+# key: head_7_9_q, cosine: 0.002763
+# key: head_8_3_q, cosine: 0.003523
+# key: head_7_9_k, cosine: 0.003654
+# key: head_7_3_q, cosine: 0.003681
+# key: head_8_11_v, cosine: 0.003844
+# key: head_8_2_k, cosine: 0.004664
+# key: head_7_8_k, cosine: 0.005252
+# key: head_8_10_v, cosine: 0.006019
+# key: head_7_2_q, cosine: 0.006434
+# key: proj_7_weights, cosine: 0.007004
+# key: head_7_1_v, cosine: 0.007108
+# key: head_7_5_k, cosine: 0.007369
+# key: head_8_5_q, cosine: 0.007630
+# key: feedforward1_7_bias, cosine: 0.007935
+# key: head_8_2_q, cosine: 0.009455
+# key: head_8_4_q, cosine: 0.009563
+# key: head_7_6_q, cosine: 0.010538
+# key: head_8_1_q, cosine: 0.011151
+# key: head_7_8_v, cosine: 0.011594
+# key: head_8_4_k, cosine: 0.013383
+# key: head_7_4_k, cosine: 0.015815
+# key: head_8_9_k, cosine: 0.015942
+# key: head_8_7_v, cosine: 0.019637
+# key: head_8_8_k, cosine: 0.020040
+# key: head_8_8_v, cosine: 0.022489
+# key: head_7_2_v, cosine: 0.022528
+# key: head_7_1_q, cosine: 0.029521
+# key: head_8_9_q, cosine: 0.031047
+# key: atten_norm_7_coeff, cosine: 0.046244
+# key: norm_8_bias, cosine: 0.060335
+# key: atten_norm_7_bias, cosine: 0.062303
+# key: proj_8_bias, cosine: 0.080355
+# key: proj_7_bias, cosine: 0.104415
+# key: atten_norm_8_coeff, cosine: 0.138726
+# key: atten_norm_8_bias, cosine: 0.355580
+# key: feedforward2_7_bias, cosine: 0.395476
+# key: feedforward2_8_bias, cosine: 0.436677
+# key: feedforward1_5_bias, cosine: 0.463231
+# key: atten_norm_6_bias, cosine: 0.477203
+# key: feedforward1_6_bias, cosine: 0.485079
+# key: atten_norm_5_bias, cosine: 0.645648
+# key: feedforward2_6_bias, cosine: 0.648668
+# key: head_6_9_q, cosine: 0.695168
+# key: feedforward2_5_bias, cosine: 0.704568
+# key: head_6_10_q, cosine: 0.709822
+# token_id: 114, token: "┬", head: 5, cosine: 0.312947
+# token_id: 267, token: "ï", head: 2, cosine: 0.329608
+# token_id: 114, token: "┬", head: 7, cosine: 0.349585
+# token_id: 77, token: "┯", head: 11, cosine: 0.395433
+# token_id: 209, token: "┃", head: 4, cosine: 0.427944
+# token_id: 114, token: "┬", head: 8, cosine: 0.434268
+# token_id: 266, token: "╰", head: 2, cosine: 0.439235
+# token_id: 267, token: "ï", head: 10, cosine: 0.450928
+# token_id: 267, token: "ï", head: 5, cosine: 0.458933
+# token_id: 114, token: "┬", head: 2, cosine: 0.485330
+# token_id: 202, token: "㇓", head: 4, cosine: 0.490262
+# token_id: 267, token: "ï", head: 1, cosine: 0.491300
+# token_id: 148, token: "╾", head: 2, cosine: 0.492144
+# token_id: 106, token: "Ⳇ", head: 8, cosine: 0.492350
+# token_id: 209, token: "┃", head: 3, cosine: 0.496194
+# token_id: 114, token: "┬", head: 9, cosine: 0.501628
+# token_id: 199, token: "┤", head: 4, cosine: 0.503356
+# token_id: 341, token: "’", head: 7, cosine: 0.504070
+# token_id: 267, token: "ï", head: 0, cosine: 0.516561
+# token_id: 114, token: "┬", head: 3, cosine: 0.517183
+# token_id: 27, token: "·", head: 9, cosine: 0.524113
+# token_id: 375, token: "”", head: 5, cosine: 0.526374
+# token_id: 254, token: "€", head: 2, cosine: 0.529430
+# token_id: 148, token: "╾", head: 0, cosine: 0.533440
+# token_id: 209, token: "┃", head: 6, cosine: 0.534945
+# token_id: 89, token: "ß", head: 3, cosine: 0.536677
+# token_id: 114, token: "┬", head: 11, cosine: 0.544440
+# token_id: 266, token: "╰", head: 3, cosine: 0.549563
+# token_id: 372, token: "┙", head: 11, cosine: 0.551652
+# token_id: 161, token: "━", head: 4, cosine: 0.554134
+# token_id: 77, token: "┯", head: 0, cosine: 0.555140
+# token_id: 114, token: "┬", head: 1, cosine: 0.555542
+# token_id: 457, token: "Ü", head: 0, cosine: 0.558626
+# token_id: 114, token: "┬", head: 4, cosine: 0.568200
+# token_id: 180, token: "✕", head: 4, cosine: 0.576108
+# token_id: 209, token: "┃", head: 5, cosine: 0.580915
+# token_id: 209, token: "┃", head: 0, cosine: 0.581579
+# token_id: 267, token: "ï", head: 3, cosine: 0.582366
+# token_id: 266, token: "╰", head: 0, cosine: 0.583294
+# token_id: 267, token: "ï", head: 11, cosine: 0.584345
+# token_id: 148, token: "╾", head: 5, cosine: 0.586514
+# token_id: 457, token: "Ü", head: 11, cosine: 0.586855
+# token_id: 199, token: "┤", head: 3, cosine: 0.591300
+# token_id: 77, token: "┯", head: 2, cosine: 0.595080
+# token_id: 209, token: "┃", head: 11, cosine: 0.598646
+# token_id: 209, token: "┃", head: 10, cosine: 0.605432
+# token_id: 180, token: "✕", head: 0, cosine: 0.605919
+# token_id: 111, token: "├", head: 0, cosine: 0.606670
+# token_id: 199, token: "┤", head: 1, cosine: 0.609202
+# token_id: 129, token: "﴿", head: 7, cosine: 0.612366
+# token_id: 209, token: "┃", head: 2, cosine: 0.612652
+# token_id: 209, token: "┃", head: 1, cosine: 0.614040
+# token_id: 114, token: "┬", head: 0, cosine: 0.615693
+# token_id: 202, token: "㇓", head: 7, cosine: 0.616648
+# token_id: 254, token: "€", head: 1, cosine: 0.620926
+# token_id: 27, token: "·", head: 4, cosine: 0.624692
+# token_id: 343, token: "🌸", head: 8, cosine: 0.627255
+# token_id: 51, token: "┛", head: 9, cosine: 0.627925
+# token_id: 202, token: "㇓", head: 10, cosine: 0.627962
+# token_id: 438, token: "┌", head: 4, cosine: 0.632434
+# token_id: 148, token: "╾", head: 3, cosine: 0.634482
+# token_id: 267, token: "ï", head: 4, cosine: 0.634512
+# token_id: 148, token: "╾", head: 1, cosine: 0.635858
+# token_id: 77, token: "┯", head: 7, cosine: 0.637223
+# token_id: 305, token: "µ", head: 1, cosine: 0.637244
+# token_id: 420, token: "⁃", head: 0, cosine: 0.642357
+# token_id: 202, token: "㇓", head: 9, cosine: 0.642853
+# token_id: 127, token: "ö", head: 4, cosine: 0.642915
+# token_id: 180, token: "✕", head: 1, cosine: 0.644225
+# token_id: 341, token: "’", head: 8, cosine: 0.644495
+# token_id: 83, token: "▼", head: 3, cosine: 0.645033
+# token_id: 148, token: "╾", head: 6, cosine: 0.645887
+# token_id: 77, token: "┯", head: 5, cosine: 0.649377
+# token_id: 266, token: "╰", head: 6, cosine: 0.651795
+# token_id: 394, token: "┐", head: 11, cosine: 0.652274
+# token_id: 111, token: "├", head: 3, cosine: 0.652311
+# token_id: 77, token: "┯", head: 4, cosine: 0.652354
+# token_id: 77, token: "┯", head: 8, cosine: 0.653671
+# token_id: 254, token: "€", head: 8, cosine: 0.653814
+# token_id: 367, token: "╴", head: 2, cosine: 0.654507
+# token_id: 33, token: "和", head: 0, cosine: 0.655825
+# token_id: 457, token: "Ü", head: 7, cosine: 0.656881
+# token_id: 438, token: "┌", head: 3, cosine: 0.658037
+# token_id: 266, token: "╰", head: 1, cosine: 0.658597
+# token_id: 100, token: "Ö", head: 4, cosine: 0.658887
+# token_id: 127, token: "ö", head: 0, cosine: 0.659674
+# token_id: 267, token: "ï", head: 7, cosine: 0.663494
+# token_id: 77, token: "┯", head: 1, cosine: 0.663739
+# token_id: 27, token: "·", head: 2, cosine: 0.665503
+# token_id: 199, token: "┤", head: 5, cosine: 0.665591
+# token_id: 254, token: "€", head: 5, cosine: 0.665820
+# token_id: 367, token: "╴", head: 9, cosine: 0.668788
+# token_id: 148, token: "╾", head: 11, cosine: 0.668934
+# token_id: 148, token: "╾", head: 4, cosine: 0.670402
+# token_id: 436, token: "╭", head: 8, cosine: 0.671261
+# token_id: 394, token: "┐", head: 3, cosine: 0.672180
+# token_id: 129, token: "﴿", head: 8, cosine: 0.672414
+# token_id: 438, token: "┌", head: 10, cosine: 0.672833
+# token_id: 148, token: "╾", head: 10, cosine: 0.676028
+# token_id: 339, token: "~", head: 9, cosine: 0.676295
+
+cargo run --release -- compare model-l9-2.dat model-l9-4.dat --limit 100;
+# share layer_0..=layer_6
+# key: norm_7_bias, cosine: -0.055437
+# key: head_8_11_v, cosine: -0.031701
+# key: norm_8_bias, cosine: -0.030273
+# key: head_8_5_k, cosine: -0.024711
+# key: feedforward1_8_bias, cosine: -0.023948
+# key: head_7_8_q, cosine: -0.023643
+# key: head_7_4_v, cosine: -0.021248
+# key: head_8_9_v, cosine: -0.021072
+# key: head_7_1_k, cosine: -0.020983
+# key: head_8_0_k, cosine: -0.017871
+# key: head_8_3_v, cosine: -0.016973
+# key: head_8_9_q, cosine: -0.014557
+# key: head_8_8_k, cosine: -0.012895
+# key: head_8_10_v, cosine: -0.011822
+# key: head_8_11_k, cosine: -0.011691
+# key: head_7_7_k, cosine: -0.009440
+# key: head_7_0_k, cosine: -0.008795
+# key: head_7_10_v, cosine: -0.008681
+# key: head_7_0_v, cosine: -0.007341
+# key: proj_8_weights, cosine: -0.006871
+# key: head_8_9_k, cosine: -0.006744
+# key: head_7_6_k, cosine: -0.006640
+# key: head_7_6_v, cosine: -0.006494
+# key: head_7_7_v, cosine: -0.005570
+# key: head_8_8_v, cosine: -0.005546
+# key: head_8_7_v, cosine: -0.005499
+# key: head_7_11_q, cosine: -0.005364
+# key: head_7_11_v, cosine: -0.004570
+# key: head_8_4_k, cosine: -0.004248
+# key: head_7_9_q, cosine: -0.004212
+# key: head_8_5_q, cosine: -0.004049
+# key: head_8_6_k, cosine: -0.003376
+# key: head_8_4_q, cosine: -0.002989
+# key: head_7_5_k, cosine: -0.002186
+# key: feedforward1_7_weights, cosine: -0.001613
+# key: head_8_3_q, cosine: -0.001538
+# key: feedforward2_7_weights, cosine: -0.001411
+# key: head_7_9_k, cosine: -0.000907
+# key: head_7_2_k, cosine: -0.000757
+# key: head_7_11_k, cosine: -0.000306
+# key: feedforward1_8_weights, cosine: -0.000003
+# key: head_8_2_v, cosine: 0.000253
+# key: head_8_10_q, cosine: 0.000729
+# key: head_7_10_q, cosine: 0.001134
+# key: head_7_8_k, cosine: 0.001202
+# key: head_8_7_k, cosine: 0.001374
+# key: feedforward2_8_weights, cosine: 0.001557
+# key: head_7_3_v, cosine: 0.001822
+# key: head_7_3_k, cosine: 0.002232
+# key: head_8_6_v, cosine: 0.002603
+# key: head_7_7_q, cosine: 0.002767
+# key: head_7_0_q, cosine: 0.002897
+# key: head_7_5_v, cosine: 0.003018
+# key: head_8_3_k, cosine: 0.003040
+# key: head_7_5_q, cosine: 0.003176
+# key: head_8_4_v, cosine: 0.003264
+# key: head_8_10_k, cosine: 0.003265
+# key: head_7_2_q, cosine: 0.003480
+# key: proj_7_bias, cosine: 0.003656
+# key: proj_8_bias, cosine: 0.004448
+# key: head_8_7_q, cosine: 0.004486
+# key: head_7_1_v, cosine: 0.005224
+# key: head_7_9_v, cosine: 0.005642
+# key: head_7_10_k, cosine: 0.006419
+# key: proj_7_weights, cosine: 0.006876
+# key: head_7_6_q, cosine: 0.007774
+# key: head_8_1_k, cosine: 0.008245
+# key: head_7_3_q, cosine: 0.008803
+# key: head_7_4_q, cosine: 0.009037
+# key: head_8_5_v, cosine: 0.009073
+# key: head_8_1_q, cosine: 0.010431
+# key: head_8_11_q, cosine: 0.011646
+# key: head_8_2_q, cosine: 0.011727
+# key: head_8_0_q, cosine: 0.014111
+# key: head_7_8_v, cosine: 0.014144
+# key: atten_norm_7_coeff, cosine: 0.016553
+# key: head_7_1_q, cosine: 0.016601
+# key: head_8_0_v, cosine: 0.016835
+# key: feedforward1_7_bias, cosine: 0.017420
+# key: head_8_8_q, cosine: 0.018284
+# key: head_8_1_v, cosine: 0.018842
+# key: head_8_2_k, cosine: 0.019212
+# key: head_7_2_v, cosine: 0.020503
+# key: head_7_4_k, cosine: 0.021029
+# key: head_8_6_q, cosine: 0.025840
+# key: norm_7_coeff, cosine: 0.034543
+# key: norm_8_coeff, cosine: 0.051768
+# key: atten_norm_8_coeff, cosine: 0.072149
+# key: atten_norm_7_bias, cosine: 0.146208
+# key: atten_norm_8_bias, cosine: 0.271601
+# key: feedforward2_7_bias, cosine: 0.455572
+# key: feedforward2_8_bias, cosine: 0.489142
+# key: atten_norm_6_bias, cosine: 0.515132
+# key: feedforward1_5_bias, cosine: 0.533166
+# key: feedforward1_6_bias, cosine: 0.545307
+# key: atten_norm_5_bias, cosine: 0.623489
+# key: proj_6_bias, cosine: 0.647996
+# key: head_6_9_q, cosine: 0.686595
+# key: head_6_10_q, cosine: 0.701319
+# key: feedforward2_6_bias, cosine: 0.706384
+# token_id: 209, token: "┃", head: 4, cosine: 0.383159
+# token_id: 77, token: "┯", head: 11, cosine: 0.395433
+# token_id: 438, token: "┌", head: 3, cosine: 0.425217
+# token_id: 114, token: "┬", head: 5, cosine: 0.437022
+# token_id: 209, token: "┃", head: 3, cosine: 0.445089
+# token_id: 209, token: "┃", head: 0, cosine: 0.447058
+# token_id: 209, token: "┃", head: 6, cosine: 0.465428
+# token_id: 438, token: "┌", head: 8, cosine: 0.484510
+# token_id: 202, token: "㇓", head: 4, cosine: 0.490262
+# token_id: 148, token: "╾", head: 2, cosine: 0.492144
+# token_id: 106, token: "Ⳇ", head: 8, cosine: 0.492350
+# token_id: 367, token: "╴", head: 2, cosine: 0.511892
+# token_id: 209, token: "┃", head: 2, cosine: 0.523607
+# token_id: 27, token: "·", head: 9, cosine: 0.524113
+# token_id: 254, token: "€", head: 2, cosine: 0.529430
+# token_id: 148, token: "╾", head: 0, cosine: 0.533440
+# token_id: 89, token: "ß", head: 3, cosine: 0.536677
+# token_id: 367, token: "╴", head: 9, cosine: 0.539986
+# token_id: 209, token: "┃", head: 1, cosine: 0.541272
+# token_id: 114, token: "┬", head: 8, cosine: 0.547348
+# token_id: 375, token: "”", head: 5, cosine: 0.549286
+# token_id: 372, token: "┙", head: 11, cosine: 0.551652
+# token_id: 77, token: "┯", head: 0, cosine: 0.555140
+# token_id: 266, token: "╰", head: 2, cosine: 0.558382
+# token_id: 457, token: "Ü", head: 0, cosine: 0.558626
+# token_id: 114, token: "┬", head: 7, cosine: 0.565437
+# token_id: 266, token: "╰", head: 0, cosine: 0.570021
+# token_id: 237, token: "┘", head: 7, cosine: 0.576195
+# token_id: 438, token: "┌", head: 9, cosine: 0.577004
+# token_id: 148, token: "╾", head: 5, cosine: 0.586514
+# token_id: 457, token: "Ü", head: 11, cosine: 0.586855
+# token_id: 209, token: "┃", head: 5, cosine: 0.590352
+# token_id: 77, token: "┯", head: 2, cosine: 0.595080
+# token_id: 114, token: "┬", head: 3, cosine: 0.595347
+# token_id: 209, token: "┃", head: 10, cosine: 0.606274
+# token_id: 341, token: "’", head: 3, cosine: 0.612627
+# token_id: 341, token: "’", head: 7, cosine: 0.614309
+# token_id: 202, token: "㇓", head: 7, cosine: 0.616648
+# token_id: 338, token: "┗", head: 9, cosine: 0.616741
+# token_id: 254, token: "€", head: 1, cosine: 0.620926
+# token_id: 438, token: "┌", head: 4, cosine: 0.622570
+# token_id: 27, token: "·", head: 4, cosine: 0.624692
+# token_id: 29, token: "─", head: 4, cosine: 0.625156
+# token_id: 343, token: "🌸", head: 8, cosine: 0.627255
+# token_id: 202, token: "㇓", head: 10, cosine: 0.627962
+# token_id: 510, token: "、", head: 7, cosine: 0.628841
+# token_id: 114, token: "┬", head: 0, cosine: 0.630767
+# token_id: 51, token: "┛", head: 9, cosine: 0.632236
+# token_id: 114, token: "┬", head: 11, cosine: 0.633814
+# token_id: 148, token: "╾", head: 3, cosine: 0.634482
+# token_id: 148, token: "╾", head: 1, cosine: 0.635858
+# token_id: 77, token: "┯", head: 7, cosine: 0.637223
+# token_id: 305, token: "µ", head: 1, cosine: 0.637244
+# token_id: 266, token: "╰", head: 6, cosine: 0.637949
+# token_id: 367, token: "╴", head: 7, cosine: 0.638395
+# token_id: 438, token: "┌", head: 7, cosine: 0.642260
+# token_id: 420, token: "⁃", head: 0, cosine: 0.642357
+# token_id: 202, token: "㇓", head: 9, cosine: 0.642853
+# token_id: 266, token: "╰", head: 1, cosine: 0.644336
+# token_id: 127, token: "ö", head: 4, cosine: 0.645651
+# token_id: 148, token: "╾", head: 6, cosine: 0.645887
+# token_id: 77, token: "┯", head: 5, cosine: 0.649377
+# token_id: 83, token: "▼", head: 3, cosine: 0.649962
+# token_id: 111, token: "├", head: 3, cosine: 0.651766
+# token_id: 77, token: "┯", head: 4, cosine: 0.652354
+# token_id: 77, token: "┯", head: 8, cosine: 0.653671
+# token_id: 254, token: "€", head: 8, cosine: 0.653814
+# token_id: 457, token: "Ü", head: 7, cosine: 0.656881
+# token_id: 352, token: "∧", head: 2, cosine: 0.656967
+# token_id: 199, token: "┤", head: 3, cosine: 0.657137
+# token_id: 209, token: "┃", head: 11, cosine: 0.658226
+# token_id: 100, token: "Ö", head: 4, cosine: 0.658887
+# token_id: 199, token: "┤", head: 4, cosine: 0.660593
+# token_id: 127, token: "ö", head: 0, cosine: 0.662292
+# token_id: 341, token: "’", head: 4, cosine: 0.662532
+# token_id: 341, token: "’", head: 11, cosine: 0.663570
+# token_id: 77, token: "┯", head: 1, cosine: 0.663739
+# token_id: 27, token: "·", head: 2, cosine: 0.665503
+# token_id: 254, token: "€", head: 5, cosine: 0.665820
+# token_id: 204, token: "∨", head: 11, cosine: 0.668643
+# token_id: 148, token: "╾", head: 11, cosine: 0.668934
+# token_id: 26, token: "┥", head: 0, cosine: 0.669182
+# token_id: 148, token: "╾", head: 4, cosine: 0.670402
+# token_id: 199, token: "┤", head: 5, cosine: 0.670908
+# token_id: 339, token: "~", head: 5, cosine: 0.675899
+# token_id: 148, token: "╾", head: 10, cosine: 0.676028
+# token_id: 305, token: "µ", head: 5, cosine: 0.677594
+# token_id: 202, token: "㇓", head: 6, cosine: 0.677703
+# token_id: 338, token: "┗", head: 1, cosine: 0.680237
+# token_id: 343, token: "🌸", head: 0, cosine: 0.680242
+# token_id: 204, token: "∨", head: 1, cosine: 0.682378
+# token_id: 51, token: "┛", head: 5, cosine: 0.683530
+# token_id: 372, token: "┙", head: 8, cosine: 0.685659
+# token_id: 266, token: "╰", head: 3, cosine: 0.690018
+# token_id: 339, token: "~", head: 9, cosine: 0.692101
+# token_id: 343, token: "🌸", head: 3, cosine: 0.692360
+# token_id: 209, token: "┃", head: 9, cosine: 0.692681
+# token_id: 27, token: "·", head: 6, cosine: 0.693860
+# token_id: 341, token: "’", head: 1, cosine: 0.694489
+# token_id: 266, token: "╰", head: 8, cosine: 0.695397
+
+cargo run --release -- compare model-l9-3.dat model-l9-4.dat --limit 100;
+# share layer_0..=layer_7
+# key: norm_8_bias, cosine: -0.057946
+# key: feedforward1_8_bias, cosine: -0.038794
+# key: head_8_11_q, cosine: -0.038251
+# key: head_8_3_k, cosine: -0.019286
+# key: head_8_7_q, cosine: -0.016760
+# key: head_8_2_q, cosine: -0.014562
+# key: head_8_9_v, cosine: -0.012086
+# key: head_8_0_q, cosine: -0.009669
+# key: head_8_9_q, cosine: -0.009395
+# key: head_8_6_q, cosine: -0.009222
+# key: head_8_5_q, cosine: -0.007791
+# key: head_8_10_v, cosine: -0.006408
+# key: head_8_4_k, cosine: -0.005703
+# key: head_8_1_k, cosine: -0.004858
+# key: head_8_8_q, cosine: -0.004275
+# key: head_8_7_v, cosine: -0.003158
+# key: proj_8_weights, cosine: -0.001450
+# key: head_8_11_v, cosine: 0.000311
+# key: feedforward2_8_weights, cosine: 0.000852
+# key: head_8_5_v, cosine: 0.002100
+# key: head_8_1_q, cosine: 0.002113
+# key: feedforward1_8_weights, cosine: 0.002668
+# key: head_8_1_v, cosine: 0.003338
+# key: head_8_4_q, cosine: 0.003506
+# key: head_8_0_k, cosine: 0.008435
+# key: head_8_11_k, cosine: 0.008571
+# key: head_8_7_k, cosine: 0.009105
+# key: head_8_9_k, cosine: 0.009960
+# key: head_8_4_v, cosine: 0.010336
+# key: proj_8_bias, cosine: 0.010535
+# key: head_8_8_v, cosine: 0.011005
+# key: head_8_0_v, cosine: 0.011371
+# key: head_8_5_k, cosine: 0.012035
+# key: head_8_2_k, cosine: 0.012384
+# key: head_8_10_q, cosine: 0.013797
+# key: head_8_6_v, cosine: 0.014542
+# key: head_8_8_k, cosine: 0.015774
+# key: head_8_3_v, cosine: 0.015836
+# key: head_8_6_k, cosine: 0.016891
+# key: head_8_2_v, cosine: 0.019569
+# key: head_8_3_q, cosine: 0.022896
+# key: head_8_10_k, cosine: 0.023344
+# key: atten_norm_8_coeff, cosine: 0.042450
+# key: norm_8_coeff, cosine: 0.100365
+# key: atten_norm_8_bias, cosine: 0.378589
+# key: atten_norm_7_bias, cosine: 0.511562
+# key: feedforward2_8_bias, cosine: 0.527666
+# key: proj_7_bias, cosine: 0.561215
+# key: feedforward1_7_bias, cosine: 0.575634
+# key: feedforward2_7_bias, cosine: 0.663957
+# key: feedforward1_6_bias, cosine: 0.682216
+# key: feedforward1_5_bias, cosine: 0.704578
+# key: norm_7_bias, cosine: 0.721659
+# key: atten_norm_6_bias, cosine: 0.808264
+# key: head_7_1_q, cosine: 0.817561
+# key: head_7_1_k, cosine: 0.859538
+# key: head_7_3_k, cosine: 0.865227
+# key: feedforward2_5_bias, cosine: 0.866691
+# key: atten_norm_5_bias, cosine: 0.883100
+# key: head_7_3_q, cosine: 0.884407
+# key: feedforward2_6_bias, cosine: 0.886891
+# key: proj_6_bias, cosine: 0.889976
+# key: proj_5_bias, cosine: 0.891322
+# key: head_7_6_q, cosine: 0.893134
+# key: head_7_11_q, cosine: 0.901185
+# key: head_7_2_k, cosine: 0.907852
+# key: head_7_0_k, cosine: 0.907874
+# key: head_7_6_k, cosine: 0.911410
+# key: norm_6_bias, cosine: 0.911560
+# key: head_7_0_q, cosine: 0.911980
+# key: head_7_11_k, cosine: 0.914451
+# key: head_7_2_q, cosine: 0.925968
+# key: head_7_5_k, cosine: 0.927130
+# key: head_7_4_q, cosine: 0.927388
+# key: head_7_4_k, cosine: 0.928629
+# key: head_7_5_q, cosine: 0.933021
+# key: head_7_7_q, cosine: 0.934308
+# key: feedforward2_7_weights, cosine: 0.934609
+# key: norm_5_bias, cosine: 0.936133
+# key: head_7_9_q, cosine: 0.936570
+# key: head_7_7_k, cosine: 0.937137
+# key: norm_7_coeff, cosine: 0.937675
+# key: head_7_8_q, cosine: 0.938015
+# key: proj_7_weights, cosine: 0.938509
+# key: proj_4_bias, cosine: 0.938990
+# key: head_7_9_k, cosine: 0.939521
+# key: head_6_5_q, cosine: 0.941954
+# key: head_7_8_k, cosine: 0.943340
+# key: head_6_4_q, cosine: 0.944930
+# key: head_6_9_q, cosine: 0.947263
+# key: atten_norm_7_coeff, cosine: 0.947629
+# key: head_7_3_v, cosine: 0.947937
+# key: head_6_6_q, cosine: 0.948830
+# key: head_7_7_v, cosine: 0.949129
+# key: head_6_7_k, cosine: 0.949439
+# key: feedforward1_4_bias, cosine: 0.949905
+# key: head_6_3_q, cosine: 0.950423
+# key: head_7_1_v, cosine: 0.950918
+# key: head_6_6_k, cosine: 0.951625
+# key: head_7_0_v, cosine: 0.952006
+# token_id: 180, token: "✕", head: 4, cosine: 0.573949
+# token_id: 180, token: "✕", head: 0, cosine: 0.620374
+# token_id: 180, token: "✕", head: 1, cosine: 0.652082
+# token_id: 114, token: "┬", head: 11, cosine: 0.657293
+# token_id: 177, token: "❨", head: 7, cosine: 0.694243
+# token_id: 469, token: "［", head: 10, cosine: 0.696849
+# token_id: 129, token: "﴿", head: 7, cosine: 0.697278
+# token_id: 416, token: "►", head: 2, cosine: 0.697551
+# token_id: 267, token: "ï", head: 10, cosine: 0.697714
+# token_id: 438, token: "┌", head: 9, cosine: 0.701539
+# token_id: 491, token: "©", head: 0, cosine: 0.709762
+# token_id: 491, token: "©", head: 5, cosine: 0.713769
+# token_id: 237, token: "┘", head: 7, cosine: 0.715963
+# token_id: 29, token: "─", head: 4, cosine: 0.719807
+# token_id: 292, token: "〙", head: 4, cosine: 0.719841
+# token_id: 390, token: "〗", head: 6, cosine: 0.726122
+# token_id: 180, token: "✕", head: 8, cosine: 0.727053
+# token_id: 438, token: "┌", head: 4, cosine: 0.728946
+# token_id: 267, token: "ï", head: 2, cosine: 0.729097
+# token_id: 367, token: "╴", head: 9, cosine: 0.731825
+# token_id: 438, token: "┌", head: 3, cosine: 0.732434
+# token_id: 213, token: "❩", head: 9, cosine: 0.735256
+# token_id: 114, token: "┬", head: 5, cosine: 0.736556
+# token_id: 303, token: "%", head: 7, cosine: 0.737915
+# token_id: 180, token: "✕", head: 9, cosine: 0.739470
+# token_id: 303, token: "%", head: 4, cosine: 0.742138
+# token_id: 267, token: "ï", head: 3, cosine: 0.745122
+# token_id: 129, token: "﴿", head: 8, cosine: 0.749237
+# token_id: 491, token: "©", head: 8, cosine: 0.751173
+# token_id: 114, token: "┬", head: 9, cosine: 0.751754
+# token_id: 292, token: "〙", head: 3, cosine: 0.757642
+# token_id: 180, token: "✕", head: 6, cosine: 0.758703
+# token_id: 114, token: "┬", head: 4, cosine: 0.760167
+# token_id: 159, token: "™", head: 3, cosine: 0.763138
+# token_id: 180, token: "✕", head: 10, cosine: 0.763679
+# token_id: 267, token: "ï", head: 1, cosine: 0.764556
+# token_id: 109, token: "｝", head: 0, cosine: 0.764886
+# token_id: 159, token: "™", head: 11, cosine: 0.766093
+# token_id: 237, token: "┘", head: 4, cosine: 0.766608
+# token_id: 469, token: "［", head: 1, cosine: 0.769821
+# token_id: 466, token: "〛", head: 1, cosine: 0.772947
+# token_id: 111, token: "├", head: 3, cosine: 0.773393
+# token_id: 158, token: "〕", head: 8, cosine: 0.773602
+# token_id: 180, token: "✕", head: 3, cosine: 0.774643
+# token_id: 416, token: "►", head: 10, cosine: 0.775230
+# token_id: 303, token: "%", head: 10, cosine: 0.775873
+# token_id: 296, token: "᾽", head: 8, cosine: 0.776136
+# token_id: 213, token: "❩", head: 11, cosine: 0.776810
+# token_id: 158, token: "〕", head: 7, cosine: 0.776842
+# token_id: 416, token: "►", head: 4, cosine: 0.777834
+# token_id: 266, token: "╰", head: 2, cosine: 0.779191
+# token_id: 267, token: "ï", head: 5, cosine: 0.779400
+# token_id: 438, token: "┌", head: 7, cosine: 0.780140
+# token_id: 303, token: "%", head: 9, cosine: 0.780660
+# token_id: 31, token: "𝄔", head: 5, cosine: 0.781070
+# token_id: 491, token: "©", head: 3, cosine: 0.783032
+# token_id: 206, token: "X", head: 3, cosine: 0.784441
+# token_id: 180, token: "✕", head: 11, cosine: 0.784720
+# token_id: 114, token: "┬", head: 2, cosine: 0.786034
+# token_id: 252, token: "΄", head: 1, cosine: 0.786475
+# token_id: 491, token: "©", head: 10, cosine: 0.787121
+# token_id: 466, token: "〛", head: 5, cosine: 0.787966
+# token_id: 394, token: "┐", head: 6, cosine: 0.788594
+# token_id: 438, token: "┌", head: 10, cosine: 0.790984
+# token_id: 438, token: "┌", head: 0, cosine: 0.792872
+# token_id: 496, token: "▸", head: 1, cosine: 0.793413
+# token_id: 158, token: "〕", head: 3, cosine: 0.793557
+# token_id: 114, token: "┬", head: 8, cosine: 0.795889
+# token_id: 25, token: "）", head: 10, cosine: 0.796495
+# token_id: 109, token: "｝", head: 8, cosine: 0.796980
+# token_id: 436, token: "╭", head: 1, cosine: 0.797041
+# token_id: 177, token: "❨", head: 1, cosine: 0.797907
+# token_id: 173, token: "❲", head: 10, cosine: 0.798451
+# token_id: 213, token: "❩", head: 1, cosine: 0.799034
+# token_id: 8, token: "7", head: 11, cosine: 0.799272
+# token_id: 199, token: "┤", head: 4, cosine: 0.801125
+# token_id: 469, token: "［", head: 0, cosine: 0.801775
+# token_id: 158, token: "〕", head: 0, cosine: 0.803384
+# token_id: 237, token: "┘", head: 1, cosine: 0.803650
+# token_id: 390, token: "〗", head: 1, cosine: 0.804509
+# token_id: 238, token: "及", head: 4, cosine: 0.805136
+# token_id: 114, token: "┬", head: 7, cosine: 0.805343
+# token_id: 114, token: "┬", head: 6, cosine: 0.805347
+# token_id: 363, token: "H", head: 9, cosine: 0.806237
+# token_id: 180, token: "✕", head: 5, cosine: 0.806287
+# token_id: 438, token: "┌", head: 5, cosine: 0.807388
+# token_id: 180, token: "✕", head: 2, cosine: 0.808912
+# token_id: 109, token: "｝", head: 9, cosine: 0.809158
+# token_id: 416, token: "►", head: 6, cosine: 0.809408
+# token_id: 294, token: "Z", head: 7, cosine: 0.809942
+# token_id: 416, token: "►", head: 9, cosine: 0.811265
+# token_id: 238, token: "及", head: 8, cosine: 0.811627
+# token_id: 252, token: "΄", head: 10, cosine: 0.812064
+# token_id: 159, token: "™", head: 2, cosine: 0.812270
+# token_id: 255, token: "⊥", head: 5, cosine: 0.812519
+# token_id: 237, token: "┘", head: 10, cosine: 0.813294
+# token_id: 255, token: "⊥", head: 2, cosine: 0.814076
+# token_id: 267, token: "ï", head: 0, cosine: 0.814511
+# token_id: 213, token: "❩", head: 7, cosine: 0.814816
+# token_id: 159, token: "™", head: 8, cosine: 0.816285
+
+cp model-l9-1.dat model-l9.dat;
+
+cargo run --release -- insert-layer --input model-l9.dat --output model-l10-1.dat --insert-at 9;
+cargo run --release -- insert-layer --input model-l9.dat --output model-l10-2.dat --insert-at 9;
+
+for _ in 0..8 {
+    cargo run --release -- train --model model-l10-1.dat --steps 31;
+    sleep 200sec;
+    cargo run --release -- train --model model-l10-2.dat --steps 31;
     sleep 200sec;
 }
