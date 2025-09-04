@@ -782,6 +782,33 @@ fn run() -> Result<(), Error> {
 
             Ok(())
         },
+        Some("dump-tokenizer") => {
+            let parsed_args = ArgParser::new()
+                .arg_flag_with_default("--model", "model.dat", ArgType::String)  // path
+                .arg_flag_with_default("--tokenizer-data", "tokenizer.json", ArgType::String)  // path
+                .args(ArgType::String, ArgCount::None)
+                .parse(&args, 2)?;
+
+            if parsed_args.show_help() {
+                println!("{}", include_str!("../docs/commands/count-tokens.txt"));
+                return Ok(());
+            }
+
+            let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
+            let tokenizer_data = parsed_args.arg_flags.get("--tokenizer-data").unwrap().to_string();
+
+            let bytes = read_bytes(&model_path)?;
+            let model: Model = bincode::deserialize(&bytes)?;
+
+            let t_s = serde_json::to_string_pretty(&model.tokenizer).unwrap();
+            write_string(
+                &tokenizer_data,
+                &t_s,
+                WriteMode::CreateOrTruncate,
+            )?;
+
+            Ok(())
+        },
         Some("count-tokens") => {
             let parsed_args = ArgParser::new()
                 // It can be a model file or a tokenizer file. The program will
