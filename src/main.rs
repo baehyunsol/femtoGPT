@@ -1154,6 +1154,70 @@ fn run() -> Result<(), Error> {
 
             Ok(())
         },
+        Some("chunks") => {
+            let parsed_args = ArgParser::new()
+                .arg_flag_with_default("--model", "model.dat", ArgType::String)  // path
+                .arg_flag_with_default("--dataset", "dataset.txt", ArgType::String)  // path
+                .arg_flag_with_default("--chunks-at", "chunks.json", ArgType::String)
+                .optional_arg_flag("--chunk-size", ArgType::integer_between(Some(1), None))
+                .args(ArgType::String, ArgCount::None)
+                .parse(&args, 2)?;
+
+            if parsed_args.show_help() {
+                println!("{}", include_str!("../docs/commands/chunks.txt"));
+                return Ok(());
+            }
+
+            let model_path = parsed_args.arg_flags.get("--model").unwrap().to_string();
+            let dataset_path = parsed_args.arg_flags.get("--dataset").unwrap().to_string();
+            let chunks_at = parsed_args.arg_flags.get("--chunks-at").unwrap().to_string();
+
+            let bytes = read_bytes(&model_path)?;
+            let model: Model = bincode::deserialize(&bytes)?;
+            let tokenizer = Tokenizer::from_inner(model.tokenizer.clone());
+            let tokens = tokenizer.tokenize(&read_string(&dataset_path)?);
+
+            let mut chunk_size = parsed_args.arg_flags.get("--chunk-size").map(|n| n.parse().unwrap()).unwrap_or(model.hyperparameters.num_tokens * 2);
+            chunk_size = chunk_size.min(tokens.len() - 1);
+            let mut chunks = vec![];
+
+            for _ in 0..9999 {
+                let mut i = rand::random::<usize>() % tokens.len();
+                i = i.min(tokens.len() - chunk_size);
+                let chunk = tokens[i..(i + chunk_size)].to_vec();
+                let mut cache = femto_gpt::infer::Cache::new();
+                let mut loss_sum = 0.0;
+
+                for i in 1..chunk.len() {
+                    let r = model.infer_step(&chunk[..i], cache);
+                    cache = r.cache;
+                    let mut loss = 1.0;
+
+                    for (id, t) in r.logit.iter() {
+                        if *id == chunk[i] {
+                            loss = (1.0 - t).sqrt();
+                            break;
+                        }
+                    }
+
+                    loss_sum += loss;
+                }
+
+                loss_sum /= (chunk.len() - 1) as f32;
+                chunks.push([
+                    (String::from("chunk"), Value::from(tokenizer.untokenize(&chunk))),
+                    (String::from("loss"), Value::from(loss_sum)),
+                ].into_iter().collect::<Map<String, Value>>());
+                chunks.sort_by_key(|n| (n.get("loss").unwrap().as_f64().unwrap() * 100_000.0) as i64);
+                write_string(
+                    &chunks_at,
+                    &serde_json::to_string_pretty(&chunks)?,
+                    WriteMode::Atomic,
+                )?;
+            }
+
+            Ok(())
+        },
         // There was an issue with keys and values. So, in order to use old models, you might
         // have to swap their key matrices and value matrices.
         Some("swap_kq") => {
