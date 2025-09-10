@@ -2061,7 +2061,7 @@ I'm training (emb 324, layer 4, head 9) model... (`model-wide.dat`). Compare thi
 
 The deeper one is better, but I'm not sure whether it's because 1) it's deeper or 2) it's initialized from a foundation model.
 
-# 46. an incremental training
+# 46. an incremental training 1
 
 Some lessons from previous exps: I initialized a lot of (usually 8 or 9) models because I thought initialization (which is purely random) affects the overall result. But I found out that in more than 90% of cases, I get the same output if I use the same recipe. So I've decided to decrease the number of models. I'll train models with the same recipe twice, and choose a better one.
 
@@ -2082,17 +2082,111 @@ I'm doing step 3 manually because I'm too lazy to write a script. I sometimes sq
 
 You can check the entire process at `exp46.nu`.
 
-Another idea: merge input and output of step 2. Here's how merging works. Let's say there are 6 layers, layer-7 is newly inserted, and trained.
+I have trained the models for a few days, and I realized that the initial setting is wrong. I'm using char-tokenizer without positional encoding. If there's no positional encoding and the same token appears multiple times in a short context, it's really difficult for the model to understand. Let's say there are 100 characters in the context and 10 of them are character 'b'. Then the model cannot distinguish the first 'b' and the second 'b', and so for all the 'b' characters.
 
-1. The models both have layer-1 ~ layer-6, but the parameters are different. layer-N of the merged model is an average of layer-N of the input and layer-N of the output.
-2. Only the output has layer-7. The merged model inherits layer-7 of the output.
+I have to try again with 1) bpe-tokenizer or 2) char-tokenizer with 한글 characters.
 
-By doing this, we can slow down the training of lower layers.
+# 47. an incremental training 2
 
-TODO: in order to check if incremental training actually works, I have to train 2 more models
+This is my second attempt on the incremental training. From the lessons from exp46, I chose a private korean dataset.
 
-1. (288, 4, 12) model without incremental training
-2. (288, 12, 12) model without incremental training
+- model-l4: emb deg 162, layers 4, heads 6, char tokenizer, no pe, num tokens 100
+  - step 1: 7.024
+  - step 21: 6.998
+  - step 41: 6.909
+  - step 61: 6.610
+  - step 81: 5.825
+  - step 101: 4.595
+  - step 121: 3.877
+  - step 141: 3.729
+  - step 161: 3.426
+- model-l5: inserted a layer to model-l4 (at the end)
+  - step 1: 4.354
+  - step 21: 3.742
+  - step 41: 3.452
+  - step 61: 3.368
+  - step 81: 3.139
+  - step 101: 3.042
+  - step 121: 2.796
+  - step 141: 2.593
+  - step 161: 2.612
+- model-l6: inserted a layer to model-l5 (at the end)
+  - step 1: 3.877
+  - step 21: 3.081
+  - step 41: 2.748
+  - step 61: 2.538
+  - step 81: 2.506
+  - step 101: 2.236
+  - step 121: 2.456
+  - step 141: 2.187
+  - step 161: 2.264
+- model-l7: inserted a layer to model-l6 (at the end)
+  - step 1: 5.328
+  - step 21: 3.397
+  - step 41: 2.557
+  - step 61: 2.478
+  - step 81: 2.332
+  - step 101: 2.201
+  - step 121: 2.215
+  - step 141: 2.075
+  - step 161: 1.864
+- model-l8: inserted a layer to model-l7 (at the end)
+  - step 1: 4.135
+  - step 21: 2.519
+  - step 41: 2.049
+  - step 61: 2.122
+  - step 81: 1.968
+  - step 101: 2.159
+  - step 121: 1.965
+  - step 141: 1.901
+  - step 161: 1.892
+- model-l9: inserted a layer to model-l8 (at the end)
+  - step 1: 4.740
+  - step 21: 2.763
+  - step 41: 2.322
+  - step 61: 2.026
+  - step 81: 1.949
+  - step 101: 2.133
+  - step 121: 1.828
+  - step 141: 1.842
+  - step 161: 1.863
+  - step 181: 1.869
+  - step 201: 1.768
+  - step 221: 1.959
+  - step 241: 1.762
+  - step 261: 1.583
+  - step 281: 1.933
+  - step 301: 1.716
 
-If 1 and exp46 aren't that different, something's really wrong: adding layers has no effect at all.
-If 2 and exp46 aren't that different, adding layers is beneficial but incremental training has no advantage.
+---
+
+A/B test: I created a model, which has the same hyperparameter as model-l9, and trained it from scratch.
+
+- step 1: 7.025
+- step 41: 6.913
+- step 81: 5.806
+- step 121: 4.086
+- step 161: 3.665
+- step 201: 3.433
+- step 241: 3.230
+- step 281: 3.030
+- step 321: 3.077
+- step 361: 2.936
+- step 401: 2.776
+- step 441: 2.715
+- step 481: 2.455
+- step 521: 2.395
+- step 561: 2.416
+- step 601: 2.420
+- step 641: 2.522
+- step 681: 2.171
+- step 721: 2.261
+- step 761: 1.930
+- step 801: 2.120
+- step 841: 1.990
+- step 881: 2.326
+- step 921: 1.987
+- step 961: 1.868
+- step 1001: 1.991
+
+In conclusion, I can't tell whether incremental training is useful or not in this experiment. In order to test incremental training, I have to use a bigger dataset and bigger model, so that it's impossible to train from scratch, and see if incremental training can train the model.
