@@ -2190,3 +2190,19 @@ A/B test: I created a model, which has the same hyperparameter as model-l9, and 
 - step 1001: 1.991
 
 In conclusion, I can't tell whether incremental training is useful or not in this experiment. In order to test incremental training, I have to use a bigger dataset and bigger model, so that it's impossible to train from scratch, and see if incremental training can train the model.
+
+# 48. an incremental training 3
+
+It's an extended version of exp47. You can see the full training script and result at `exp48.nu`. I used the same dataset, and most settings are the same except that the model is slightly bigger.
+
+This experiment is a failure. Not because the model is dumb (it's smarter than I've expected), but because it's not incrementally trained. The result shows that my approach to incremental training is completely wrong.
+
+1. Maybe `STEP_PER_LAYER` was too small. It was 200 steps, and it wasn't enough to train the lower layers. Alternative approaches would be:
+  - Train `l4-untrained` (the first iteration) much longer, so that the lower layers are stabilized, and train the other iterations shorter than `l4-untrained`.
+  - Adjust `STEP_PER_LAYER` dynamically based on the loss.
+2. Maybe I should freeze the old layers when training a new layer. The approach should be:
+  - First, insert a layer.
+  - Second, train the new layer while the old layers are frozen.
+  - Third, fine tune all the layers.
+  - Forth, insert another layer.
+  - ...
