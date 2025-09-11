@@ -1048,7 +1048,7 @@ fn run() -> Result<(), Error> {
             }
 
             cosine_by_key.sort_by_key(|(key, _)| key.to_string());
-            cosine_by_key.sort_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+            cosine_by_key.sort_by(|(_, a), (_, b)| a.total_cmp(b));
 
             if reverse {
                 cosine_by_key = cosine_by_key.into_iter().rev().collect();
@@ -1081,7 +1081,7 @@ fn run() -> Result<(), Error> {
             }
 
             cosine_by_token.sort_by_key(|(_, token, _, _)| token.to_string());
-            cosine_by_token.sort_by(|(_, _, _, a), (_, _, _, b)| a.partial_cmp(b).unwrap());
+            cosine_by_token.sort_by(|(_, _, _, a), (_, _, _, b)| a.total_cmp(b));
 
             if reverse {
                 cosine_by_token = cosine_by_token.into_iter().rev().collect();
@@ -1139,7 +1139,7 @@ fn run() -> Result<(), Error> {
                 }
 
                 // rev sort
-                cosines.sort_by(|(_, _, a), (_, _, b)| b.partial_cmp(a).unwrap());
+                cosines.sort_by(|(_, _, a), (_, _, b)| b.total_cmp(a));
 
                 println!("---- Head {i} ----");
 
