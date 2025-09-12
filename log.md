@@ -2206,3 +2206,9 @@ This experiment is a failure. Not because the model is dumb (it's smarter than I
   - Third, fine tune all the layers.
   - Forth, insert another layer.
   - ...
+
+# 49. an incremental training 4
+
+It's almost identical to exp48, but I'm training for 300 steps per each iteration. Read `exp49.nu`.
+
+Well... it kinda works. I have to try again with bigger dataset and bigger `STEP_PER_LAYER`.

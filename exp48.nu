@@ -73,6 +73,7 @@ python3 incremental-training.py;
 # The training scripts adds a layer and trains it for 200 steps in each iteration.
 # For example, it adds l5 (which is 6th layer) to l6-untrained and trains it for 200 steps, then it becomes l6-trained.
 # I compared the cosine similarities of tensors before and after an iteration.
+# Below is the list of top-20 most updated tensors (by cosine similarity).
 #
 # l5-untrained vs l5-trained
 # key: atten_norm_0_bias, cosine: 0.339922
