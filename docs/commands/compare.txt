@@ -1,1 +1,18 @@
-TODO: write doc
+gpt-compare(1)
+==========
+
+NAME
+----
+gpt-compare - Compare 2 models
+
+SYNOPSIS
+--------
+[verse]
+'gpt count-tokens' [--limit <n=10>] [--reverse] model1 model2
+
+DESCRIPTION
+-----------
+It dumps cosine similarities of tensors and token embeddings.
+
+OPTIONS
+-------

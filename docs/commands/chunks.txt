@@ -1,0 +1,5 @@
+I have a very wild idea.
+
+With this command, you can create chunks from the dataset. For each chunk, it evaluates how good the model is at generating the chunk.
+
+Then we can create a new dataset: half from the chunks that the model is familiar with and the other half with unfamiliar chunks.
