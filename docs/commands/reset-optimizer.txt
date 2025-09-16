@@ -1,0 +1,18 @@
+gpt-reset-optimizer(1)
+==========
+
+NAME
+----
+gpt-reset-optimizer - Resets optimizer state
+
+SYNOPSIS
+--------
+[verse]
+'gpt reset-optimizer' [--model <path=model.dat>]
+
+DESCRIPTION
+-----------
+It resets the optimizer state of the model. It saves a lot of storage space.
+
+OPTIONS
+-------
